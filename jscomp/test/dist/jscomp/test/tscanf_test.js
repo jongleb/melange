@@ -2414,7 +2414,7 @@ test("File \"jscomp/test/tscanf_test.ml\", line 506, characters 5-12", test22())
 
 function scan_elems$5(ib, scan_elem, accu) {
   try {
-    return Curry._2(scan_elem, ib, (function (i, s) {
+    return Curry._1(scan_elem(ib), (function (i, s) {
       const accu$1 = {
         hd: i,
         tl: accu
@@ -2670,7 +2670,7 @@ function test28(param) {
 test("File \"jscomp/test/tscanf_test.ml\", line 609, characters 5-12", test28());
 
 function scan_elems$6(ib, scan_elem, accu) {
-  return Curry._3(scan_elem, ib, (function (i, s) {
+  return scan_elem(ib, (function (i, s) {
     const accu$1 = {
       hd: i,
       tl: accu
@@ -2839,7 +2839,7 @@ function scan_elem(fmt, ib, f, ek) {
 }
 
 function scan_elems$7(ib, scan_elem, accu) {
-  return Curry._3(scan_elem, ib, (function (i) {
+  return scan_elem(ib, (function (i) {
     const accu$1 = {
       hd: i,
       tl: accu

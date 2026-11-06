@@ -157,7 +157,7 @@ function find(x, _param) {
 
 function timing(label, f) {
   console.time(label);
-  Curry._1(f, undefined);
+  f();
   console.timeEnd(label);
 }
 

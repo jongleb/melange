@@ -63,4 +63,8 @@ let rec merge_arities_aux (acc : int list) (xs : int list) (ys : int list)
   | x :: xs, y :: ys when x = y -> merge_arities_aux (y :: acc) xs ys tail tail2
   | _, _ -> info (List.rev acc) false
 
-let merge_arities xs ys t t2 = merge_arities_aux [] xs ys t t2
+let join (x : t) (y : t) =
+  match (x, y) with
+  | Arity_na, _ | _, Arity_na -> Arity_na
+  | Arity_info (xs, tail), Arity_info (ys, tail2) ->
+      merge_arities_aux [] xs ys tail tail2

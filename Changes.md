@@ -3,6 +3,8 @@ Unreleased
 
 - compiler: call local bindings to values of known arity directly, e.g.
   `let g = if c then f1 else f2 in g x y`
+- compiler: infer the arity of function-typed parameters of local functions
+  that do not escape from the arguments at their call sites
 
 6.0.1-54 2025-11-29
 ---------------

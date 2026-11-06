@@ -108,7 +108,7 @@ let collect_info =
             so -- it would still iterate internally
         *)
         List.iter
-          ~f:(fun p -> Ident.Hashtbl.add meta.ident_tbl ~key:p ~data:Parameter)
+          ~f:(fun p -> Ident.Hashtbl.add meta.ident_tbl ~key:p ~data:(Parameter Lam_arity.na))
           params;
         let arity = Lam_arity_analysis.get_arity meta lam in
         annotate meta rec_flag ident arity lam;
@@ -141,7 +141,7 @@ let collect_info =
     | Lfunction { params; body = l; _ } ->
         (* functor ? *)
         List.iter
-          ~f:(fun p -> Ident.Hashtbl.add meta.ident_tbl ~key:p ~data:Parameter)
+          ~f:(fun p -> Ident.Hashtbl.add meta.ident_tbl ~key:p ~data:(Parameter Lam_arity.na))
           params;
         collect meta l
     | Llet (_, ident, arg, body) ->
@@ -202,4 +202,6 @@ let collect_info =
         List.iter ~f:(collect meta) ll
     | Lifused (_v, e) -> collect meta e
   in
-  fun (meta : Lam_stats.t) (lam : Lam.t) -> collect meta lam
+  fun (meta : Lam_stats.t) (lam : Lam.t) ->
+    collect meta lam;
+    Lam_param_arity.infer meta lam

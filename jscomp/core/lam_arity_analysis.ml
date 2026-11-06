@@ -29,7 +29,7 @@ let arity_of_var (meta : Lam_stats.t) (v : Ident.t) =
       if it's not from function parameter, we should warn
   *)
   match Ident.Hashtbl.find meta.ident_tbl v with
-  | FunctionId { arity; _ } -> arity
+  | FunctionId { arity; _ } | Parameter arity -> arity
   | _ | (exception Not_found) -> Lam_arity.na
 
 (* we need record all aliases -- since not all aliases are eliminated,
@@ -143,16 +143,10 @@ let rec get_arity (meta : Lam_stats.t) (lam : Lam.t) : Lam_arity.t =
 and all_lambdas meta (xs : Lam.t list) =
   match xs with
   | y :: ys ->
-      let arity = get_arity meta y in
       let rec aux (acc : Lam_arity.t) xs =
         match (acc, xs) with
-        | Arity_na, _ -> acc
-        | _, [] -> acc
-        | Arity_info (xxxs, tail), y :: ys -> (
-            match get_arity meta y with
-            | Arity_na -> Lam_arity.na
-            | Arity_info (yyys, tail2) ->
-                aux (Lam_arity.merge_arities xxxs yyys tail tail2) ys)
+        | Arity_na, _ | _, [] -> acc
+        | Arity_info _, y :: ys -> aux (Lam_arity.join acc (get_arity meta y)) ys
       in
-      aux arity ys
+      aux (get_arity meta y) ys
   | [] -> Lam_arity.na

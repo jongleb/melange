@@ -676,7 +676,7 @@ function first(f, _param) {
     if (!param) {
       return;
     }
-    const res = Curry._1(f, param.hd);
+    const res = f(param.hd);
     if (res !== undefined) {
       return res;
     }
@@ -1480,7 +1480,7 @@ function iter(_n, f, _v) {
     if (n === 0) {
       return v;
     }
-    _v = Curry._1(f, v);
+    _v = f(v);
     _n = n - 1 | 0;
     continue;
   };

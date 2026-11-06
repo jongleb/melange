@@ -1066,7 +1066,7 @@ function parse_opt(error, active, flags, s) {
     }
     const match$1 = get_range(i);
     for (let n = match$1[1], n_finish = Caml.caml_int_min(match$1[2], 104); n <= n_finish; ++n) {
-      Curry._1(myset, n);
+      myset(n);
     }
     loop(match$1[0]);
   };
@@ -6879,7 +6879,7 @@ const builtin_idents = {
 };
 
 function wrap(create, s) {
-  const id = Curry._1(create, s);
+  const id = create(s);
   builtin_idents.contents = {
     hd: [
       s,
@@ -9362,7 +9362,7 @@ function map_snd(f, param) {
 
 function map_tuple(f1, f2, param) {
   return [
-    Curry._1(f1, param[0]),
+    f1(param[0]),
     Curry._1(f2, param[1])
   ];
 }
@@ -11321,7 +11321,7 @@ function fold_name(f) {
         continue;
       }
       _param = param$2._2;
-      _accu = Curry._2(f$2, param$2._1, accu);
+      _accu = Curry._1(f$2(param$2._1), accu);
       _stack = {
         hd: param$2._0,
         tl: stack
@@ -11840,11 +11840,11 @@ function find_module_descr(path, env) {
 function find$3(proj1, proj2, path, env) {
   switch (path.TAG) {
     case /* Pident */ 0 :
-      return find_same$1(path._0, Curry._1(proj1, env))[1];
+      return find_same$1(path._0, proj1(env))[1];
     case /* Pdot */ 1 :
       const c = force(components_of_module_maker$p.contents, find_module_descr(path._0, env));
       if (c.TAG === /* Structure_comps */ 0) {
-        return find$2(path._1, Curry._1(proj2, c._0))[0];
+        return find$2(path._1, proj2(c._0))[0];
       }
       throw new Caml_js_exceptions.MelangeError(Stdlib.Not_found, {
           MEL_EXN_ID: Stdlib.Not_found
@@ -12363,13 +12363,13 @@ function lookup_module(load, lid, env) {
 function lookup(proj1, proj2, lid, env) {
   switch (lid.TAG) {
     case /* Lident */ 0 :
-      return find_name$1(lid._0, Curry._1(proj1, env));
+      return find_name$1(lid._0, proj1(env));
     case /* Ldot */ 1 :
       const s = lid._1;
       const match = lookup_module_descr(lid._0, env);
       const c = force(components_of_module_maker$p.contents, match[1]);
       if (c.TAG === /* Structure_comps */ 0) {
-        const match$1 = find$2(s, Curry._1(proj2, c._0));
+        const match$1 = find$2(s, proj2(c._0));
         return [
           {
             TAG: /* Pdot */ 1,
@@ -12393,7 +12393,7 @@ function lookup(proj1, proj2, lid, env) {
 function lookup_all_simple(proj1, proj2, shadow, lid, env) {
   switch (lid.TAG) {
     case /* Lident */ 0 :
-      const xl = find_all(lid._0, Curry._1(proj1, env));
+      const xl = find_all(lid._0, proj1(env));
       const do_shadow = function (param) {
         if (!param) {
           return /* [] */ 0;
@@ -12406,7 +12406,7 @@ function lookup_all_simple(proj1, proj2, shadow, lid, env) {
             match[1]
           ],
           tl: do_shadow(Stdlib__List.filter((function (param) {
-            return !Curry._2(shadow, x, param[0]);
+            return !shadow(x, param[0]);
           }), param.tl))
         };
       };
@@ -12417,7 +12417,7 @@ function lookup_all_simple(proj1, proj2, shadow, lid, env) {
       if (c.TAG === /* Structure_comps */ 0) {
         let comps;
         try {
-          comps = find$2(lid._1, Curry._1(proj2, c._0));
+          comps = find$2(lid._1, proj2(c._0));
         }
         catch (raw_exn){
           const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
@@ -12891,7 +12891,7 @@ function iter_types(f) {
         TAG: /* Pident */ 0,
         _0: id
       }, param[0]);
-    }), Curry._1(proj1, param));
+    }), proj1(param));
     const iter_components = function (path, path$p, mcomps) {
       const cont = function (param) {
         const match = get_arg(mcomps);
@@ -12935,7 +12935,7 @@ function iter_types(f) {
             },
             param[0]
           ]);
-        }), Curry._1(proj2, comps$1));
+        }), proj2(comps$1));
         iter$2((function (s, param) {
           const n = param[1];
           iter_components({
@@ -13011,7 +13011,7 @@ function find_all_comps(proj, s, param) {
     return /* [] */ 0;
   }
   try {
-    const match = find$2(s, Curry._1(proj, comps._0));
+    const match = find$2(s, proj(comps._0));
     return {
       hd: [
         {
@@ -13058,7 +13058,7 @@ function find_shadowed(proj1, proj2, path, env) {
     case /* Pident */ 0 :
       return Stdlib__List.map((function (prim) {
         return prim[0];
-      }), find_all(path._0.name, Curry._1(proj1, env)));
+      }), find_all(path._0.name, proj1(env)));
     case /* Pdot */ 1 :
       const s = path._1;
       const l = find_shadowed_comps(path._0, env);
@@ -14524,7 +14524,7 @@ function enter(store_fun, name, data, env) {
   const id = create(name);
   return [
     id,
-    Curry._6(store_fun, undefined, id, {
+    store_fun(undefined, id, {
       TAG: /* Pident */ 0,
       _0: id
     }, data, env, env)
@@ -14793,7 +14793,7 @@ function find_all$1(proj1, proj2, f, lid, env, acc) {
   if (lid === undefined) {
     return fold_name(function (id, param, acc) {
       return Curry._4(f, id.name, param[0], param[1], acc);
-    })(Curry._1(proj1, env), acc);
+    })(proj1(env), acc);
   }
   const match = lookup_module_descr(lid, env);
   const p = match[0];
@@ -14806,7 +14806,7 @@ function find_all$1(proj1, proj2, f, lid, env, acc) {
         _1: s,
         _2: param[1]
       }, param[0], acc);
-    }), Curry._1(proj2, c._0), acc);
+    }), proj2(c._0), acc);
   } else {
     return acc;
   }
@@ -14816,7 +14816,7 @@ function find_all_simple_list(proj1, proj2, f, lid, env, acc) {
   if (lid === undefined) {
     return fold_name(function (id, data, acc) {
       return Curry._2(f, data, acc);
-    })(Curry._1(proj1, env), acc);
+    })(proj1(env), acc);
   }
   const match = lookup_module_descr(lid, env);
   const c = force(components_of_module_maker, match[1]);
@@ -14827,7 +14827,7 @@ function find_all_simple_list(proj1, proj2, f, lid, env, acc) {
       } else {
         return acc;
       }
-    }), Curry._1(proj2, c._0), acc);
+    }), proj2(c._0), acc);
   } else {
     return acc;
   }
@@ -23014,7 +23014,7 @@ function directive_parse(token_with_comments, lexbuf) {
     }
     let _param;
     while (true) {
-      const t = Curry._1(token_with_comments, lexbuf);
+      const t = token_with_comments(lexbuf);
       if (/* tag */ typeof t === "number" || typeof t === "string") {
         switch (t) {
           case /* EOF */ 25 :
@@ -23065,11 +23065,11 @@ function directive_parse(token_with_comments, lexbuf) {
           exit = 1;
           break;
         default:
-          return Curry._1(no, op);
+          return no(op);
       }
     } else {
       if (op.TAG !== /* INFIXOP0 */ 2) {
-        return Curry._1(no, op);
+        return no(op);
       }
       switch (op._0) {
         case "=~" :
@@ -23234,7 +23234,7 @@ function directive_parse(token_with_comments, lexbuf) {
           exit = 1;
           break;
         default:
-          return Curry._1(no, op);
+          return no(op);
       }
     }
     if (exit === 1) {
@@ -23930,7 +23930,7 @@ function with_comment_buffer(comment, lexbuf) {
     tl: /* [] */ 0
   };
   reset_string_buffer();
-  const end_loc = Curry._1(comment, lexbuf);
+  const end_loc = comment(lexbuf);
   const s = get_stored_string();
   reset_string_buffer();
   const loc_loc_start = start_loc.loc_start;
@@ -25205,7 +25205,7 @@ function token$1(lexbuf) {
                       case /* Dir_if_true */ 0 :
                       case /* Dir_if_false */ 1 :
                         if_then_else.contents = /* Dir_out */ 2;
-                        return Curry._1(cont, lexbuf);
+                        return cont(lexbuf);
                       case /* Dir_out */ 2 :
                         throw new Caml_js_exceptions.MelangeError($$Error$4, {
                             MEL_EXN_ID: $$Error$4,
@@ -25225,7 +25225,7 @@ function token$1(lexbuf) {
                       case /* Dir_out */ 2 :
                         if (directive_parse(token_with_comments, lexbuf)) {
                           if_then_else.contents = /* Dir_if_true */ 0;
-                          return Curry._1(cont, lexbuf);
+                          return cont(lexbuf);
                         } else {
                           let _param;
                           while (true) {
@@ -25243,10 +25243,10 @@ function token$1(lexbuf) {
                                 switch (token$1) {
                                   case /* ELSE */ 23 :
                                     if_then_else.contents = /* Dir_if_false */ 1;
-                                    return Curry._1(cont, lexbuf);
+                                    return cont(lexbuf);
                                   case /* END */ 24 :
                                     if_then_else.contents = /* Dir_out */ 2;
-                                    return Curry._1(cont, lexbuf);
+                                    return cont(lexbuf);
                                   case /* IF */ 37 :
                                     throw new Caml_js_exceptions.MelangeError($$Error$4, {
                                         MEL_EXN_ID: $$Error$4,
@@ -25257,7 +25257,7 @@ function token$1(lexbuf) {
                               }
                               if (is_elif(token$1) && directive_parse(token_with_comments, lexbuf)) {
                                 if_then_else.contents = /* Dir_if_true */ 0;
-                                return Curry._1(cont, lexbuf);
+                                return cont(lexbuf);
                               }
                               _param = undefined;
                               continue;
@@ -25268,14 +25268,14 @@ function token$1(lexbuf) {
                         }
                     }
                   default:
-                    return Curry._1(look_ahead, match);
+                    return look_ahead(match);
                 }
               } else {
                 if (match.TAG !== /* LIDENT */ 11) {
-                  return Curry._1(look_ahead, match);
+                  return look_ahead(match);
                 }
                 if (match._0 !== "elif") {
-                  return Curry._1(look_ahead, match);
+                  return look_ahead(match);
                 }
                 switch (if_then_else$1) {
                   case /* Dir_if_true */ 0 :
@@ -25318,7 +25318,7 @@ function token$1(lexbuf) {
                             continue;
                           case /* END */ 24 :
                             if_then_else.contents = /* Dir_out */ 2;
-                            return Curry._1(cont, lexbuf);
+                            return cont(lexbuf);
                           case /* IF */ 37 :
                             throw new Caml_js_exceptions.MelangeError($$Error$4, {
                                 MEL_EXN_ID: $$Error$4,
@@ -25340,7 +25340,7 @@ function token$1(lexbuf) {
                   };
                 case /* Dir_if_false */ 1 :
                 case /* Dir_out */ 2 :
-                  return Curry._1(look_ahead, match);
+                  return look_ahead(match);
               }
             }
             break;
@@ -25545,7 +25545,7 @@ function wrap$1(parsing_fun, lexbuf) {
   try {
     init();
     init$1();
-    const ast = Curry._2(parsing_fun, token$1, lexbuf);
+    const ast = parsing_fun(token$1, lexbuf);
     Stdlib__Parsing.clear_parser();
     warn_bad_docstrings();
     return ast;
@@ -28058,7 +28058,7 @@ function set_mode_pattern(generate, injective, f) {
     umode.contents = /* Pattern */ 1;
     generate_equations.contents = generate;
     assume_injective.contents = injective;
-    const ret = Curry._1(f, undefined);
+    const ret = f();
     umode.contents = old_unification_mode;
     generate_equations.contents = old_gen;
     assume_injective.contents = old_inj;
@@ -30122,7 +30122,7 @@ const delayed_copy = {
 
 function copy_sep(fixed, free, bound, visited, ty) {
   const ty$1 = repr(ty);
-  const univars = Curry._1(free, ty$1);
+  const univars = free(ty$1);
   if (Curry._1(is_empty$2, univars)) {
     if (ty$1.level !== 100000000) {
       return ty$1;
@@ -30438,7 +30438,7 @@ function expand_abbrev_gen(kind, find_type_expansion, env, ty) {
     }
     let match$1;
     try {
-      match$1 = Curry._2(find_type_expansion, path, env);
+      match$1 = find_type_expansion(path, env);
     }
     catch (raw_exn$1){
       const exn$1 = Caml_js_exceptions.internalToOCamlException(raw_exn$1);
@@ -30592,7 +30592,7 @@ function try_expand_safe(env, ty) {
 }
 
 function try_expand_head(try_once, env, ty) {
-  const ty$p = Curry._2(try_once, env, ty);
+  const ty$p = try_once(env, ty);
   try {
     return try_expand_head(try_once, env, ty$p);
   }
@@ -31346,7 +31346,7 @@ function enter_poly(env, univar_pairs, t1, tl1, t2, tl2, f) {
     }
   };
   try {
-    const res = Curry._2(f, t1, t2);
+    const res = f(t1, t2);
     univar_pairs.contents = old_univars;
     return res;
   }
@@ -32752,7 +32752,7 @@ function unify_package(env, unify_list, lv1, p1, n1, tl1, lv2, p2, n2, tl2) {
     TAG: /* Mty_ident */ 0,
     _0: p1
   }, n1, tl1);
-  Curry._2(unify_list, Stdlib__List.map((function (prim) {
+  unify_list(Stdlib__List.map((function (prim) {
     return prim[1];
   }), ntl1), Stdlib__List.map((function (prim) {
     return prim[1];
@@ -33793,7 +33793,7 @@ function unify_row(env, row1, row2) {
   const closed = row1$1.row_closed || row2$1.row_closed;
   const keep = function ($$switch) {
     return Stdlib__List.for_all((function (param) {
-      const match = Curry._2($$switch, param[1], param[2]);
+      const match = $$switch(param[1], param[2]);
       if (Caml_obj.caml_equal(row_field_repr_aux(/* [] */ 0, match[0]), /* Rabsent */ 0)) {
         return true;
       } else {
@@ -39328,10 +39328,10 @@ function print_list(pr, sep, ppf, _param) {
     }
     const a = param.hd;
     if (!param.tl) {
-      return Curry._2(pr, ppf, a);
+      return pr(ppf, a);
     }
-    Curry._2(pr, ppf, a);
-    Curry._1(sep, ppf);
+    pr(ppf, a);
+    sep(ppf);
     _param = param.tl;
     continue;
   };
@@ -42598,8 +42598,8 @@ function print_out_sig_item(ppf, param) {
                 if (!param$2) {
                   return;
                 }
-                Curry._1(sep, param);
-                Curry._2(print_out_label, param, param$2.hd);
+                sep(param);
+                print_out_label(param, param$2.hd);
                 _param = param$2.tl;
                 continue;
               };
@@ -46812,8 +46812,8 @@ function cltype_declaration$1(id, ppf, cl) {
 
 function wrap_env(fenv, ftree, arg) {
   const env = printing_env.contents;
-  set_printing_env(Curry._1(fenv, env));
-  const tree = Curry._1(ftree, arg);
+  set_printing_env(fenv(env));
+  const tree = ftree(arg);
   set_printing_env(env);
   return tree;
 }
@@ -57046,7 +57046,7 @@ function map_filter(f, _param) {
       return /* [] */ 0;
     }
     const xs = param.tl;
-    const y = Curry._1(f, param.hd);
+    const y = f(param.hd);
     if (y !== undefined) {
       return {
         hd: Caml_option.valFromOption(y),
@@ -57081,15 +57081,15 @@ function complete_constrs(p, all_tags) {
 
 function build_other_constant(proj, make, first, next, p, env) {
   const all = Stdlib__List.map((function (param) {
-    return Curry._1(proj, param[0].pat_desc);
+    return proj(param[0].pat_desc);
   }), env);
   let _i = first;
   while (true) {
     const i = _i;
     if (!Stdlib__List.mem(i, all)) {
-      return make_pat(Curry._1(make, i), p.pat_type, p.pat_env);
+      return make_pat(make(i), p.pat_type, p.pat_env);
     }
-    _i = Curry._1(next, i);
+    _i = next(i);
     continue;
   };
 }
@@ -57714,7 +57714,7 @@ function try_many_gadt(f, param) {
     return /* Rnone */ 0;
   }
   const match = param.hd;
-  let r1 = Curry._1(f, [
+  let r1 = f([
     match[0],
     match[1]
   ]);
@@ -57767,7 +57767,7 @@ function exhaust(ext, pss, n) {
           return /* Rnone */ 0;
         }
         const match = param.hd;
-        const r = Curry._1(try_non_omega, [
+        const r = try_non_omega([
           match[0],
           match[1]
         ]);
@@ -57818,7 +57818,7 @@ function combinations(f, lst, lst$p) {
   const iter2 = function (x, param) {
     if (param) {
       return {
-        hd: Curry._2(f, x, param.hd),
+        hd: f(x, param.hd),
         tl: iter2(x, param.tl)
       };
     } else {
@@ -59139,7 +59139,7 @@ function conv(typed) {
 
 function do_check_partial(pred, exhaust, loc, casel, pss) {
   if (pss) {
-    const match = Curry._3(exhaust, undefined, pss, Stdlib__List.length(pss.hd));
+    const match = exhaust(undefined, pss, Stdlib__List.length(pss.hd));
     if (/* tag */ typeof match === "number" || typeof match === "string") {
       return /* Total */ 1;
     }
@@ -59281,7 +59281,7 @@ function do_check_fragile_param(exhaust, loc, casel, pss) {
   }
   const ps = pss.hd;
   Stdlib__List.iter((function (ext) {
-    const match = Curry._3(exhaust, ext, pss, Stdlib__List.length(ps));
+    const match = exhaust(ext, pss, Stdlib__List.length(ps));
     if (/* tag */ typeof match === "number" || typeof match === "string") {
       return prerr_warning(loc, {
         TAG: /* Fragile_match */ 1,
@@ -59309,12 +59309,12 @@ function check_partial_param(do_check_partial, do_check_fragile, loc, casel) {
   }
   const pss = initial_matrix(casel);
   const pss$1 = get_mins(le_pats, pss);
-  const total = Curry._3(do_check_partial, loc, casel, pss$1);
+  const total = do_check_partial(loc, casel, pss$1);
   if (total === /* Total */ 1 && is_active({
       TAG: /* Fragile_match */ 1,
       _0: ""
     })) {
-    Curry._3(do_check_fragile, loc, casel, pss$1);
+    do_check_fragile(loc, casel, pss$1);
   }
   return total;
 }
@@ -59720,7 +59720,7 @@ function narrow_unbound_lid_error(env, loc, lid, make_error) {
       MEL_EXN_ID: $$Error$6,
       _1: loc,
       _2: env,
-      _3: Curry._1(make_error, lid)
+      _3: make_error(lid)
     });
 }
 
@@ -59732,20 +59732,20 @@ function find_component(lookup, make_error, env, loc, lid) {
         switch (match.TAG) {
           case /* Lident */ 0 :
             if (match._0 === "*predef*") {
-              return Curry._2(lookup, {
+              return lookup({
                 TAG: /* Lident */ 0,
                 _0: lid._1
               }, initial_safe_string);
             } else {
-              return Curry._2(lookup, lid, env);
+              return lookup(lid, env);
             }
           case /* Ldot */ 1 :
           case /* Lapply */ 2 :
-            return Curry._2(lookup, lid, env);
+            return lookup(lid, env);
         }
       case /* Lident */ 0 :
       case /* Lapply */ 2 :
-        return Curry._2(lookup, lid, env);
+        return lookup(lid, env);
     }
   }
   catch (raw_exn){
@@ -61501,12 +61501,12 @@ function spellcheck(ppf, fold, env, lid) {
   switch (lid.TAG) {
     case /* Lident */ 0 :
       const s = lid._0;
-      return handle(Curry._4(fold, (function (param, param$1) {
+      return handle(Curry._3(fold(function (param, param$1) {
         return compare(s, param, param$1);
       }), undefined, env, init));
     case /* Ldot */ 1 :
       const s$1 = lid._1;
-      return handle(Curry._4(fold, (function (param, param$1) {
+      return handle(Curry._3(fold(function (param, param$1) {
         return compare(s$1, param, param$1);
       }), lid._0, env, init));
     case /* Lapply */ 2 :
@@ -62361,7 +62361,7 @@ function iter_expression(f, e) {
   const expr = function (_e) {
     while (true) {
       const e = _e;
-      Curry._1(f, e);
+      f(e);
       const pel = e.pexp_desc;
       switch (pel.TAG) {
         case /* Pexp_let */ 2 :
@@ -63654,7 +63654,7 @@ function compare_type_path(env, tpath1, tpath2) {
 
 function wrap_disambiguate(kind, ty, f, x) {
   try {
-    return Curry._1(f, x);
+    return f(x);
   }
   catch (raw_exn){
     const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
@@ -66208,19 +66208,19 @@ function iter_ppat(f, p) {
       return may(f, pats._1);
     case /* Ppat_record */ 7 :
       return Stdlib__List.iter((function (param) {
-        Curry._1(f, param[1]);
+        f(param[1]);
       }), pats._0);
     case /* Ppat_tuple */ 4 :
     case /* Ppat_array */ 8 :
       return Stdlib__List.iter(f, pats._0);
     case /* Ppat_or */ 9 :
-      Curry._1(f, pats._0);
-      return Curry._1(f, pats._1);
+      f(pats._0);
+      return f(pats._1);
     case /* Ppat_alias */ 1 :
     case /* Ppat_constraint */ 10 :
     case /* Ppat_lazy */ 12 :
     case /* Ppat_exception */ 14 :
-      return Curry._1(f, pats._0);
+      return f(pats._0);
     default:
       return;
   }
@@ -73186,7 +73186,7 @@ function check_well_founded(env, loc, path, to_check, ty) {
           });
       }
       if (match$2.TAG === /* Tconstr */ 3) {
-        if (!Curry._1(is_empty$2, exp_nodes$1) || Curry._1(to_check, match$2._0)) {
+        if (!Curry._1(is_empty$2, exp_nodes$1) || to_check(match$2._0)) {
           const ty$p = try_expand_once_opt(env, ty$1);
           const ty0$1 = Curry._1(is_empty$2, exp_nodes$1) ? ty$1 : ty0;
           return check(ty0$1, Curry._2(add$3, ty$1, exp_nodes$1), ty$p);
@@ -73304,7 +73304,7 @@ function check_recursion(env, loc, path, decl, to_check) {
                 });
             }
             
-          } else if (Curry._1(to_check, path$p) && !Stdlib__List.mem(path$p, prev_exp)) {
+          } else if (to_check(path$p) && !Stdlib__List.mem(path$p, prev_exp)) {
             try {
               const match$1 = find_type_expansion(path$p, env);
               const params0 = match$1[0];
@@ -75468,7 +75468,7 @@ function approx_type_decl(env, sdecl_list) {
 function explain_unbound(ppf, tv, tl, typ, kwd, lab) {
   try {
     const ti = Stdlib__List.find((function (ti) {
-      return deep_occur(tv, Curry._1(typ, ti));
+      return deep_occur(tv, typ(ti));
     }), tl);
     const ty0 = newty2(100000000, {
       TAG: /* Tobject */ 4,
@@ -75478,7 +75478,7 @@ function explain_unbound(ppf, tv, tl, typ, kwd, lab) {
       }
     });
     reset_and_mark_loops_list({
-      hd: Curry._1(typ, ti),
+      hd: typ(ti),
       tl: {
         hd: ty0,
         tl: /* [] */ 0
@@ -75559,7 +75559,7 @@ function explain_unbound(ppf, tv, tl, typ, kwd, lab) {
         }
       },
       _1: ".@.@[<hov2>In %s@ %s%a@;<1 -2>the variable %a is unbound@]"
-    }), kwd, Curry._1(lab, ti), type_expr$1, Curry._1(typ, ti), type_expr$1, tv);
+    }), kwd, lab(ti), type_expr$1, typ(ti), type_expr$1, tv);
   }
   catch (raw_exn){
     const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
@@ -77007,15 +77007,15 @@ function generalize_class_type(gen, _param) {
         continue;
       case /* Cty_signature */ 1 :
         const match = param._0;
-        Curry._1(gen, match.csig_self);
+        gen(match.csig_self);
         Curry._2(Meths.iter, (function (param, param$1) {
-          Curry._1(gen, param$1[2]);
+          gen(param$1[2]);
         }), match.csig_vars);
         return Stdlib__List.iter((function (param) {
           Stdlib__List.iter(gen, param[1]);
         }), match.csig_inher);
       case /* Cty_arrow */ 2 :
-        Curry._1(gen, param._1);
+        gen(param._1);
         _param = param._2;
         continue;
     }
@@ -79534,7 +79534,7 @@ function type_classes(define_class, approx, kind, env, cls) {
     const match = temp_abbrev(cl.pci_loc, param[1], obj_id, arity);
     const match$1 = temp_abbrev(cl.pci_loc, match[2], cl_id, arity);
     const env = match$1[2];
-    const constr_type = Curry._1(approx, cl.pci_expr);
+    const constr_type = approx(cl.pci_expr);
     if (principal.contents) {
       generalize_spine(constr_type);
     }
@@ -79644,7 +79644,7 @@ function type_classes(define_class, approx, kind, env, cls) {
         ],
         tl: self_coercion.contents
       };
-      const res = Curry._2(kind, env, cl.pci_expr);
+      const res = kind(env, cl.pci_expr);
       self_coercion.contents = Stdlib__List.tl(self_coercion.contents);
       match = res;
     }
@@ -82511,8 +82511,10 @@ function merge_constraint(initial_env, loc, sg, constr) {
 function map_rec(fn, decls, rem) {
   if (decls) {
     return {
-      hd: Curry._2(fn, /* Trec_first */ 1, decls.hd),
-      tl: map_end(Curry._1(fn, /* Trec_next */ 2), decls.tl, rem)
+      hd: fn(/* Trec_first */ 1, decls.hd),
+      tl: map_end((function (param) {
+        return fn(/* Trec_next */ 2, param);
+      }), decls.tl, rem)
     };
   } else {
     return rem;
@@ -82526,8 +82528,10 @@ function map_rec_type(rec_flag, fn, decls, rem) {
   let first;
   first = rec_flag === /* Nonrecursive */ 0 ? /* Trec_not */ 0 : /* Trec_first */ 1;
   return {
-    hd: Curry._2(fn, first, decls.hd),
-    tl: map_end(Curry._1(fn, /* Trec_next */ 2), decls.tl, rem)
+    hd: fn(first, decls.hd),
+    tl: map_end((function (param) {
+      return fn(/* Trec_next */ 2, param);
+    }), decls.tl, rem)
   };
 }
 
@@ -82538,7 +82542,7 @@ function map_rec_type_with_row_types(rec_flag, fn, decls, rem) {
   const d1 = decls.hd;
   if (is_row_name(d1.typ_id.name)) {
     return {
-      hd: Curry._2(fn, /* Trec_not */ 0, d1),
+      hd: fn(/* Trec_not */ 0, d1),
       tl: map_rec_type_with_row_types(rec_flag, fn, decls.tl, rem)
     };
   } else {
@@ -82562,8 +82566,10 @@ function rec_flag_of_ptype_declarations(tds) {
 function map_ext(fn, exts, rem) {
   if (exts) {
     return {
-      hd: Curry._2(fn, /* Text_first */ 0, exts.hd),
-      tl: map_end(Curry._1(fn, /* Text_next */ 1), exts.tl, rem)
+      hd: fn(/* Text_first */ 0, exts.hd),
+      tl: map_end((function (param) {
+        return fn(/* Text_next */ 1, param);
+      }), exts.tl, rem)
     };
   } else {
     return rem;

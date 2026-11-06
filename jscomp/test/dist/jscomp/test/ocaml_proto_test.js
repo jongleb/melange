@@ -2360,7 +2360,7 @@ function gen_decode_record(and_, param, sc) {
       _1: "| Some (%i, Pbrt.%s) -> ("
     }), encoding_number, pk_as_string));
     scope(sc, (function (sc) {
-      Curry._1(f, sc);
+      f(sc);
       line$1(sc, "loop ()");
     }));
     line$1(sc, ")");
@@ -4663,7 +4663,7 @@ function compile_oneof_p1(param) {
 
 function not_found(f) {
   try {
-    Curry._1(f, undefined);
+    f();
     return false;
   }
   catch (raw_exn){

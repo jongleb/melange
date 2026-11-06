@@ -91,7 +91,7 @@ let simplify_alias =
     | Constant (Const_int { i = _; _ }) -> Eval_true
     | Constant (Const_js_false | Const_js_null | Const_js_undefined _) ->
         Eval_false
-    | Constant _ | Module _ | FunctionId _ | Exception | Parameter | NA
+    | Constant _ | Module _ | FunctionId _ | Exception | Parameter _ | NA
     | OptionalBlock (_, (Undefined | Null | Null_undefined))
     | (exception Not_found) ->
         Eval_unknown
@@ -203,7 +203,11 @@ let simplify_alias =
                       match arg with
                       | Lvar p | Lmutvar p -> (
                           match Ident.Hashtbl.find meta.ident_tbl p with
-                          | v -> v <> Parameter
+                          | Parameter _ -> false
+                          | Normal_optional _ | OptionalBlock _
+                          | ImmutableBlock _ | MutableBlock _ | Constant _
+                          | Module _ | FunctionId _ | Exception | NA ->
+                              true
                           | exception Not_found -> true)
                       | _ -> true)
                     args ->

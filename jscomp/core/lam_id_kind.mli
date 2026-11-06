@@ -61,8 +61,10 @@ type t =
       lambda : (Lam.t * rec_flag) option;
     }
   | Exception
-  | Parameter
-      (** For this case, it can help us determine whether it should be inlined or not *)
+  | Parameter of Lam_arity.t
+      (** For this case, it can help us determine whether it should be inlined or not.
+          The arity is inferred from the call sites of the enclosing function
+          by {!Lam_param_arity}, [Arity_na] otherwise. *)
   | NA
       (** Not such information is associated with an identifier, it is immutable,
            if you only associate a property to an identifier

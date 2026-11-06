@@ -43,4 +43,6 @@ val get_first_arity : t -> int option
 val extract_arity : t -> int list
 (** when [NA] return  empty list*)
 
-val merge_arities : int list -> int list -> bool -> bool -> t
+val join : t -> t -> t
+(** The arity of a value that is either of the two: the common prefix of the
+    arities, [Arity_na] if either side is [Arity_na]. *)

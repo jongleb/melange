@@ -8001,7 +8001,7 @@ function annotation_opt(env) {
 function wrap(f, env) {
   const env$1 = with_strict(true, env);
   push_lex_mode(env$1, /* TYPE */ 1);
-  const ret = Curry._1(f, env$1);
+  const ret = f(env$1);
   pop_lex_mode(env$1);
   return ret;
 }
@@ -15327,7 +15327,7 @@ function parse(content, options) {
     };
     const option = function (f, v) {
       if (v !== undefined) {
-        return Curry._1(f, Caml_option.valFromOption(v));
+        return f(Caml_option.valFromOption(v));
       } else {
         return $$null;
       }
