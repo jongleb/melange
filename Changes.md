@@ -10,6 +10,10 @@ Unreleased
 - compiler: inline applications of functors from other modules to closed
   arguments during alias simplification, so that the functions of the
   argument are inlined too
+- compiler: normalise a function-typed parameter of unknown arity once with
+  `Curry.__n` when it is called in a loop or by a local recursive function,
+  or passed unchanged through self-recursion, instead of going through
+  `Curry._n` on every call
 
 6.0.1-54 2025-11-29
 ---------------
