@@ -1,3 +1,9 @@
+Unreleased
+---------------
+
+- compiler: call local bindings to values of known arity directly, e.g.
+  `let g = if c then f1 else f2 in g x y`
+
 6.0.1-54 2025-11-29
 ---------------
 

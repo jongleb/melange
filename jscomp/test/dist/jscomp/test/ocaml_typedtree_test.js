@@ -57688,7 +57688,7 @@ function orify_many(param) {
   if (param) {
     const x = param.hd;
     if (param.tl) {
-      let y = Curry._1(orify_many, param.tl);
+      let y = orify_many(param.tl);
       return make_pat({
         TAG: /* Tpat_or */ 8,
         _0: x,
@@ -57959,7 +57959,7 @@ function exhaust_gadt$1(ext, pss, n) {
   return {
     TAG: /* Rsome */ 0,
     _0: {
-      hd: Curry._1(orify_many, singletons),
+      hd: orify_many(singletons),
       tl: /* [] */ 0
     }
   };
@@ -60266,7 +60266,7 @@ function transl_type(env, policy, styp) {
       const unify_param = ty$4 !== undefined && repr(ty$4).level !== 100000000 ? unify$2 : unify_var;
       Stdlib__List.iter2((function (param, ty$p) {
         try {
-          return Curry._3(unify_param, env, ty$p, param[1].ctyp_type);
+          return unify_param(env, ty$p, param[1].ctyp_type);
         }
         catch (raw_trace){
           const trace = Caml_js_exceptions.internalToOCamlException(raw_trace);
@@ -67684,7 +67684,7 @@ function type_expect_(in_function, env, sexp, ty_expected) {
           const force$p$p = subtype(env, ty$5, ty$p$1);
           Curry._1(match$30[1], undefined);
           Curry._1(match$31[1], undefined);
-          Curry._1(force$p$p, undefined);
+          force$p$p();
         }
         catch (raw_exn$2){
           const exn$2 = Caml_js_exceptions.internalToOCamlException(raw_exn$2);
@@ -67773,7 +67773,7 @@ function type_expect_(in_function, env, sexp, ty_expected) {
               try {
                 const force$p = subtype(env, arg$4.exp_type, ty$p$2);
                 Curry._1(force, undefined);
-                Curry._1(force$p, undefined);
+                force$p();
                 if (!gen) {
                   prerr_warning(loc, {
                     TAG: /* Not_principal */ 8,
