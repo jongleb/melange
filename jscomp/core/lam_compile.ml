@@ -205,9 +205,9 @@ and compile_external_field_apply ~dynamic_import (appinfo : Lam.apply)
             E.call ~info:(call_info_of_apply_status ap_status) fn args
         | App_na -> (
             match arity with
-            | Submodule _ | Single Arity_na ->
+            | Submodule _ | Single Arity_na | Functor { arity = Arity_na; _ } ->
                 E.call ~info:Js_call_info.dummy fn args
-            | Single x ->
+            | Single x | Functor { arity = x; _ } ->
                 apply_with_arity fn ~arity:(Lam_arity.extract_arity x) args)
       in
       Js_output.output_of_block_and_expression lambda_cxt.continuation args_code
@@ -227,9 +227,25 @@ and compile_recursive_let :
     Ident.t ->
     Lam.t ->
     Js_output.t * initialization =
-  let args_either_function_or_const (args : Lam.t list) =
+  let args_already_defined ~all_bindings id (args : Lam.t list) =
+    (* bindings are declared in order, so the functions bound before [id]
+       exist when it is *)
+    let rec earlier_functions acc (bindings : (Ident.t * Lam.t) list) =
+      match bindings with
+      | [] -> acc
+      | (other, _) :: _ when Ident.same other id -> acc
+      | (other, Lfunction _) :: rest ->
+          earlier_functions (Ident.Set.add other acc) rest
+      | _ :: rest -> earlier_functions acc rest
+    in
+    let defined = earlier_functions Ident.Set.empty all_bindings in
     List.for_all args ~f:(function
       | Lam.Lfunction _ | Lconst _ -> true
+      | Lvar v ->
+          Ident.Set.mem v defined
+          || not
+               (List.exists all_bindings ~f:(fun (other, _) ->
+                    Ident.same other v))
       | _ -> false)
   in
   fun ~all_bindings
@@ -299,7 +315,7 @@ and compile_recursive_let :
             ~no_effects:(lazy (Lam_analysis.no_side_effects arg)),
           [] )
     | Lprim { primitive = Pmakeblock (_, _, _); args; _ }
-      when args_either_function_or_const args ->
+      when args_already_defined ~all_bindings id args ->
         (compile_lambda { cxt with continuation = Declare (Alias, id) } arg, [])
         (* case of lazy blocks, treat it as usual *)
     | Lprim

@@ -46,7 +46,12 @@ open Import
     ]}
 *)
 
-type arity = Single of Lam_arity.t | Submodule of Lam_arity.t array
+type arity =
+  | Single of Lam_arity.t
+  | Submodule of Lam_arity.t array
+  | Functor of { arity : Lam_arity.t; result : Lam_arity.t array }
+      (** A function, typically a functor, that returns a block whose fields
+          have the arities [result] whatever its arguments *)
 
 type cmj_value = {
   arity : arity;

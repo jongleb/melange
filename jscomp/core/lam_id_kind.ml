@@ -51,6 +51,10 @@ module Element = struct
     | _ -> NA
 end
 
+module Field_arity = struct
+  type t = Function of Lam_arity.t | Module of t array | Unknown
+end
+
 type boxed_nullable = Undefined | Null | Null_undefined
 
 type t =
@@ -68,6 +72,7 @@ type t =
       lambda : (Lam.t * rec_flag) option;
     }
   | Exception
+  | Module_arities of Field_arity.t array
   | Parameter of Lam_arity.t
       (** For this case, it can help us determine whether it should be inlined or not.
           The arity is inferred from the call sites of the enclosing function
@@ -111,5 +116,6 @@ let print =
     | Module id -> pp fmt "%s/%d" (Ident.name id) (Ident.stamp id)
     | FunctionId _ -> pp fmt "FunctionID"
     | Exception -> pp fmt "Exception"
+    | Module_arities fields -> pp fmt "Module_arities(%d)" (Array.length fields)
     | Parameter _ -> pp fmt "Parameter"
     | NA -> pp fmt "NA"

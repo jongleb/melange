@@ -49,7 +49,7 @@ let rec get_arity (meta : Lam_stats.t) (lam : Lam.t) : Lam_arity.t =
         _;
       } -> (
       match Lam_compile_env.query_external_id_info ~dynamic_import id name with
-      | Some { arity = Single x; _ } -> x
+      | Some { arity = Single x | Functor { arity = x; _ }; _ } -> x
       | Some { arity = Submodule _; _ } | None -> Lam_arity.na)
   | Lprim
       {
@@ -68,7 +68,7 @@ let rec get_arity (meta : Lam_stats.t) (lam : Lam.t) : Lam_arity.t =
       match Lam_compile_env.query_external_id_info ~dynamic_import id name with
       | Some { arity = Submodule subs; _ } ->
           subs.(m) (* TODO: shall we store it as array?*)
-      | Some { arity = Single _; _ } | None -> Lam_arity.na)
+      | Some { arity = Single _ | Functor _; _ } | None -> Lam_arity.na)
   (* TODO: all information except Pccall is complete, we could
      get more arity information
   *)
@@ -80,6 +80,28 @@ let rec get_arity (meta : Lam_stats.t) (lam : Lam.t) : Lam_arity.t =
       } ->
       Lam_arity.info [ arity ] false
   | Lprim { primitive = Praise; _ } -> Lam_arity.raise_arity_info
+  | Lprim { primitive = Pfield (i, _); args = [ parent ]; _ } -> (
+      let rec recursive_fields (lam : Lam.t) =
+        match lam with
+        | Lvar v -> (
+            match Ident.Hashtbl.find_opt meta.ident_tbl v with
+            | Some (Module_arities fields) -> Some fields
+            | Some _ | None -> None)
+        | Lprim { primitive = Pfield (j, _); args = [ parent ]; _ } -> (
+            match recursive_fields parent with
+            | Some fields when j < Array.length fields -> (
+                match fields.(j) with
+                | Module fields -> Some fields
+                | Function _ | Unknown -> None)
+            | Some _ | None -> None)
+        | _ -> None
+      in
+      match recursive_fields parent with
+      | Some fields when i < Array.length fields -> (
+          match fields.(i) with
+          | Function arity -> arity
+          | Module _ | Unknown -> Lam_arity.na)
+      | Some _ | None -> Lam_arity.na)
   | Lglobal_module _ (* TODO: fix me never going to happen *) | Lprim _ ->
       Lam_arity.na (* CHECK*)
   (* shall we handle primitive in a direct way,
@@ -146,7 +168,8 @@ and all_lambdas meta (xs : Lam.t list) =
       let rec aux (acc : Lam_arity.t) xs =
         match (acc, xs) with
         | Arity_na, _ | _, [] -> acc
-        | Arity_info _, y :: ys -> aux (Lam_arity.join acc (get_arity meta y)) ys
+        | Arity_info _, y :: ys ->
+            aux (Lam_arity.join acc (get_arity meta y)) ys
       in
       aux (get_arity meta y) ys
   | [] -> Lam_arity.na

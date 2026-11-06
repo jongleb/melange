@@ -39,6 +39,12 @@ module Element : sig
         (** An immutable block built in place, e.g. a submodule constrained
             by a signature. Only its elements can be substituted, never the
             block itself. *)
+
+  val of_lambda : Lam.t -> t
+end
+
+module Field_arity : sig
+  type t = Function of Lam_arity.t | Module of t array | Unknown
 end
 
 type boxed_nullable = Undefined | Null | Null_undefined
@@ -67,6 +73,11 @@ type t =
       lambda : (Lam.t * rec_flag) option;
     }
   | Exception
+  | Module_arities of Field_arity.t array
+      (** A module whose fields have known arities but must not be
+          substituted: a module of a [module rec], whose fields are stubs
+          until [update_mod] fills them in, or the result of applying a
+          functor of another compilation unit *)
   | Parameter of Lam_arity.t
       (** For this case, it can help us determine whether it should be inlined or not.
           The arity is inferred from the call sites of the enclosing function

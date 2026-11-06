@@ -45,13 +45,39 @@ let values_of_export =
     List.fold_left meta.exports ~init:String.Map.empty ~f:(fun acc x ->
         let arity =
           match Ident.Hashtbl.find meta.ident_tbl x with
-          | FunctionId { arity; _ } -> Js_cmj_format.Single arity
+          | FunctionId { arity; _ } -> (
+              let rec result (lam : Lam.t) =
+                match lam with
+                | Llet (_, _, _, body)
+                | Lmutlet (_, _, body)
+                | Lletrec (_, body)
+                | Lsequence (_, body) ->
+                    result body
+                | Lprim { primitive = Pmakeblock (_, _, Immutable); args; _ } ->
+                    Some
+                      (Array.of_list_map args ~f:(fun lam ->
+                           Lam_arity_analysis.get_arity meta lam))
+                | _ -> None
+              in
+              match Ident.Map.find_opt x export_map with
+              | Some (Lfunction { body; _ }) -> (
+                  match result body with
+                  | Some result -> Js_cmj_format.Functor { arity; result }
+                  | None -> Single arity)
+              | Some _ | None -> Single arity)
           | ImmutableBlock elems ->
               (* FIXME: field name for dumping *)
               Submodule
                 (Array.map elems ~f:(function
                   | Lam_id_kind.Element.NA | Block _ -> Lam_arity.na
                   | SimpleForm lam -> Lam_arity_analysis.get_arity meta lam))
+          | Module_arities fields ->
+              (* other modules only run once [update_mod] has filled in the
+                 fields *)
+              Submodule
+                (Array.map fields ~f:(function
+                  | Lam_id_kind.Field_arity.Function arity -> arity
+                  | Module _ | Unknown -> Lam_arity.na))
           | _ | (exception Not_found) -> (
               match Ident.Map.find x export_map with
               | Lprim { primitive = Pmakeblock (_, _, Immutable); args; _ } ->

@@ -117,6 +117,99 @@ let lambda_of_groups ~(rev_bindings : Lam_group.t list) (result : Lam.t) : Lam.t
     return value are in reverse order, but handled by [lambda_of_groups]
 *)
 let deep_flatten =
+  (* A recursive module is a binding to
+     [let f1 = fun .. in .. let fn = fun .. in makeblock f1 .. fn]. Lift the
+     inner bindings into the [letrec], resolve the fields of the lifted
+     blocks inside it, and return separately the blocks that nothing in it
+     refers to any more, to be bound after it: they are then blocks of known
+     elements and not recursive values. Functions and blocks of variables or
+     constants are values, so evaluation order is unchanged. *)
+  let lift_recursive_modules (bindings : (Ident.t * Lam.t) list) =
+    let simple_block (args : Lam.t list) =
+      List.for_all args ~f:(fun (arg : Lam.t) ->
+          match arg with Lvar _ | Lconst _ -> true | _ -> false)
+    in
+    let rec lift acc (lam : Lam.t) =
+      match lam with
+      | Llet (_, id, (Lfunction _ as value), body) ->
+          lift ((id, value) :: acc) body
+      | Llet
+          ( _,
+            id,
+            (Lprim { primitive = Pmakeblock (_, _, Immutable); args; _ } as
+             value),
+            body )
+        when simple_block args ->
+          lift ((id, value) :: acc) body
+      | Lletrec (bindings, body)
+        when List.for_all bindings ~f:(fun (_, (value : Lam.t)) ->
+                 match value with Lfunction _ -> true | _ -> false) ->
+          lift (List.rev_append bindings acc) body
+      | Lprim { primitive = Pmakeblock (_, _, Immutable); args; _ }
+        when simple_block args ->
+          Some (List.rev acc, lam)
+      | _ -> None
+    in
+    let lifted, blocks =
+      List.fold_right bindings ~init:([], Ident.Map.empty)
+        ~f:(fun (id, (arg : Lam.t)) (lifted, blocks) ->
+          match arg with
+          | Llet _ | Lletrec _ -> (
+              match lift [] arg with
+              | Some (inner, block) ->
+                  ( inner @ ((id, block) :: lifted),
+                    List.fold_left ((id, block) :: inner) ~init:blocks
+                      ~f:(fun blocks (id, (value : Lam.t)) ->
+                        match value with
+                        | Lprim { primitive = Pmakeblock _; args; _ } ->
+                            Ident.Map.add blocks ~key:id ~data:args
+                        | _ -> blocks) )
+              | None -> ((id, arg) :: lifted, blocks))
+          | _ -> ((id, arg) :: lifted, blocks))
+    in
+    match Ident.Map.is_empty blocks with
+    | true -> (bindings, [])
+    | false ->
+        let rec resolve (lam : Lam.t) : Lam.t =
+          match Lam.inner_map lam resolve with
+          | Lprim { primitive = Pfield (i, _); args = [ Lvar m ]; _ } as field
+            -> (
+              match Ident.Map.find_opt m blocks with
+              | Some args -> (
+                  match List.nth_opt args i with
+                  | Some ((Lvar _ | Lconst _) as element) -> element
+                  | Some _ | None -> field)
+              | None -> field)
+          | lam -> lam
+        in
+        let lifted =
+          List.map lifted ~f:(fun (id, value) -> (id, resolve value))
+        in
+        let rec keep kept id =
+          match Ident.Set.mem id kept with
+          | true -> kept
+          | false ->
+              List.fold_left (Ident.Map.find id blocks)
+                ~init:(Ident.Set.add id kept) ~f:(fun kept (arg : Lam.t) ->
+                  match arg with
+                  | Lvar v when Ident.Map.mem v blocks -> keep kept v
+                  | _ -> kept)
+        in
+        let kept =
+          List.fold_left lifted ~init:Ident.Set.empty
+            ~f:(fun kept (id, value) ->
+              match Ident.Map.mem id blocks with
+              | true -> kept
+              | false ->
+                  Ident.Map.fold blocks ~init:kept
+                    ~f:(fun ~key:block ~data:_ kept ->
+                      match Lam_hit.hit_variable block value with
+                      | true -> keep kept block
+                      | false -> kept))
+        in
+        List.partition lifted ~f:(fun (id, _) ->
+            (not (Ident.Map.mem id blocks)) || Ident.Set.mem id kept)
+  in
   let rec flatten (acc : Lam_group.t list) (lam : Lam.t) :
       Lam.t * Lam_group.t list =
     match lam with
@@ -212,7 +305,16 @@ let deep_flatten =
             | None -> flatten (Single (kind, id, res) :: accux) body)
         | _ -> flatten (Single (kind, id, res) :: accux) body)
     | Lletrec (bind_args, body) ->
-        flatten (Recursive (List.map_snd bind_args ~f:aux) :: acc) body
+        let bindings, blocks_after =
+          lift_recursive_modules (List.map_snd bind_args ~f:aux)
+        in
+        let acc =
+          match bindings with [] -> acc | _ :: _ -> Recursive bindings :: acc
+        in
+        flatten
+          (List.fold_left blocks_after ~init:acc ~f:(fun acc (id, block) ->
+               Lam_group.Single (Strict, id, block) :: acc))
+          body
     | Lsequence (l, r) ->
         let res, l = flatten acc l in
         flatten (Lam_group.nop_cons res l) r
@@ -224,13 +326,13 @@ let deep_flatten =
         lambda_of_groups res ~rev_bindings:groups
     | Lletrec (bind_args, body) ->
         (* Attention: don't mess up with internal {let rec} *)
-        let rec iter bind_args groups set =
-          match bind_args with
-          | [] -> (List.rev groups, set)
-          | (id, arg) :: rest ->
-              iter rest ((id, aux arg) :: groups) (Ident.Set.add id set)
+        let groups, blocks_after =
+          lift_recursive_modules (List.map_snd bind_args ~f:aux)
         in
-        let groups, collections = iter bind_args [] Ident.Set.empty in
+        let collections =
+          List.fold_left groups ~init:Ident.Set.empty
+            ~f:(fun collections (id, _) -> Ident.Set.add id collections)
+        in
         (* Try to extract some value definitions from recursive values as [wrap],
             it will stop whenever it find it could not move forward
            {[
@@ -254,7 +356,13 @@ let deep_flatten =
         lambda_of_groups
           ~rev_bindings:rev_wrap
             (* These bindings are extracted from [letrec] *)
-          (Lam.letrec (List.rev rev_bindings) (aux body))
+          (let body =
+             List.fold_right blocks_after ~init:(aux body)
+               ~f:(fun (id, block) body -> Lam.let_ Strict id block body)
+           in
+           match rev_bindings with
+           | [] -> body
+           | _ :: _ -> Lam.letrec (List.rev rev_bindings) body)
     | Lsequence (l, r) -> Lam.seq (aux l) (aux r)
     | Lconst _ -> lam
     | Lvar _ | Lmutvar _ ->

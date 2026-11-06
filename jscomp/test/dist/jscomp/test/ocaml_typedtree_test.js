@@ -29329,7 +29329,7 @@ function limited_generalize(ty0, ty) {
 function inv_type(hash, pty, ty) {
   const ty$1 = repr(ty);
   try {
-    const inv = Curry._2(TypeHash.find, hash, ty$1);
+    const inv = TypeHash.find(hash, ty$1);
     inv.inv_parents = Stdlib.$at(pty, inv.inv_parents);
     return;
   }
@@ -29340,7 +29340,7 @@ function inv_type(hash, pty, ty) {
         inv_type: ty$1,
         inv_parents: pty
       };
-      Curry._3(TypeHash.add, hash, ty$1, inv$1);
+      TypeHash.add(hash, ty$1, inv$1);
       const partial_arg = {
         hd: inv$1,
         tl: /* [] */ 0
@@ -29354,16 +29354,16 @@ function inv_type(hash, pty, ty) {
 }
 
 function compute_univars(ty) {
-  const inverted = Curry._1(TypeHash.create, 17);
+  const inverted = TypeHash.create(17);
   inv_type(inverted, /* [] */ 0, ty);
-  const node_univars = Curry._1(TypeHash.create, 17);
+  const node_univars = TypeHash.create(17);
   const add_univar = function (univ, inv) {
     const match = inv.inv_type.desc;
     if (!/* tag */ (typeof match === "number" || typeof match === "string") && match.TAG === /* Tpoly */ 10 && Stdlib__List.memq(univ, Stdlib__List.map(repr, match._1))) {
       return;
     }
     try {
-      const univs = Curry._2(TypeHash.find, node_univars, inv.inv_type);
+      const univs = TypeHash.find(node_univars, inv.inv_type);
       if (!mem$3(univ, univs.contents)) {
         univs.contents = add$3(univ, univs.contents);
         return Stdlib__List.iter((function (param) {
@@ -29376,7 +29376,7 @@ function compute_univars(ty) {
     catch (raw_exn){
       const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
       if (exn.MEL_EXN_ID === Stdlib.Not_found) {
-        Curry._3(TypeHash.add, node_univars, inv.inv_type, {
+        TypeHash.add(node_univars, inv.inv_type, {
           contents: singleton$2(univ)
         });
         return Stdlib__List.iter((function (param) {
@@ -29386,7 +29386,7 @@ function compute_univars(ty) {
       throw exn;
     }
   };
-  Curry._2(TypeHash.iter, (function (ty, inv) {
+  TypeHash.iter((function (ty, inv) {
     if (is_Tunivar(ty)) {
       return add_univar(ty, inv);
     }
@@ -29394,7 +29394,7 @@ function compute_univars(ty) {
   }), inverted);
   return function (ty) {
     try {
-      return Curry._2(TypeHash.find, node_univars, ty).contents;
+      return TypeHash.find(node_univars, ty).contents;
     }
     catch (raw_exn){
       const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
@@ -31572,7 +31572,7 @@ function mcomp(type_pairs, env, _t1, _t2) {
         return;
       }
       try {
-        return Curry._2(TypePairs.find, type_pairs, [
+        return TypePairs.find(type_pairs, [
           t1$p$1,
           t2$p$1
         ]);
@@ -31580,7 +31580,7 @@ function mcomp(type_pairs, env, _t1, _t2) {
       catch (raw_exn){
         const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
         if (exn.MEL_EXN_ID === Stdlib.Not_found) {
-          Curry._3(TypePairs.add, type_pairs, [
+          TypePairs.add(type_pairs, [
             t1$p$1,
             t2$p$1
           ], undefined);
@@ -32368,7 +32368,7 @@ function mcomp_record_description(type_pairs, env) {
 }
 
 function mcomp$1(env, t1, t2) {
-  mcomp(Curry._1(TypePairs.create, 4), env, t1, t2);
+  mcomp(TypePairs.create(4), env, t1, t2);
 }
 
 function find_lowest_level(ty) {
@@ -32434,7 +32434,7 @@ function add_gadt_equation(env, source, destination) {
   cleanup_abbrev();
 }
 
-const unify_eq_set = Curry._1(TypePairs.create, 11);
+const unify_eq_set = TypePairs.create(11);
 
 function order_type_pair(t1, t2) {
   if (t1.id <= t2.id) {
@@ -32451,7 +32451,7 @@ function order_type_pair(t1, t2) {
 }
 
 function add_type_equality(t1, t2) {
-  Curry._3(TypePairs.add, unify_eq_set, order_type_pair(t1, t2), undefined);
+  TypePairs.add(unify_eq_set, order_type_pair(t1, t2), undefined);
 }
 
 function eq_package_path(env, p1, p2) {
@@ -32655,7 +32655,7 @@ function unify_eq(env, t1, t2) {
     return false;
   }
   try {
-    Curry._2(TypePairs.find, unify_eq_set, order_type_pair(t1, t2));
+    TypePairs.find(unify_eq_set, order_type_pair(t1, t2));
     return true;
   }
   catch (raw_exn){
@@ -34520,7 +34520,7 @@ function moregen(inst_nongen, type_pairs, env, t1, t2) {
         return;
       }
       try {
-        return Curry._2(TypePairs.find, type_pairs, [
+        return TypePairs.find(type_pairs, [
           t1$p$1,
           t2$p$1
         ]);
@@ -34528,7 +34528,7 @@ function moregen(inst_nongen, type_pairs, env, t1, t2) {
       catch (raw_exn){
         const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
         if (exn.MEL_EXN_ID === Stdlib.Not_found) {
-          Curry._3(TypePairs.add, type_pairs, [
+          TypePairs.add(type_pairs, [
             t1$p$1,
             t2$p$1
           ], undefined);
@@ -35156,7 +35156,7 @@ function moregeneral(env, inst_nongen, pat_sch, subj_sch) {
   const patt = instance(undefined, env, pat_sch);
   let res;
   try {
-    moregen$1(inst_nongen, Curry._1(TypePairs.create, 13), env, patt, subj);
+    moregen$1(inst_nongen, TypePairs.create(13), env, patt, subj);
     res = true;
   }
   catch (raw_exn){
@@ -35387,7 +35387,7 @@ function eqtype(rename, type_pairs, subst, env, t1, t2) {
         return;
       }
       try {
-        return Curry._2(TypePairs.find, type_pairs, [
+        return TypePairs.find(type_pairs, [
           t1$p$1,
           t2$p$1
         ]);
@@ -35395,7 +35395,7 @@ function eqtype(rename, type_pairs, subst, env, t1, t2) {
       catch (raw_exn$1){
         const exn$1 = Caml_js_exceptions.internalToOCamlException(raw_exn$1);
         if (exn$1.MEL_EXN_ID === Stdlib.Not_found) {
-          Curry._3(TypePairs.add, type_pairs, [
+          TypePairs.add(type_pairs, [
             t1$p$1,
             t2$p$1
           ], undefined);
@@ -35870,7 +35870,7 @@ function eqtype_fields(rename, type_pairs, subst, env, ty1, _ty2) {
     const rest1 = match[1];
     const match$1 = flatten_fields(ty2);
     const rest2 = match$1[1];
-    const same_row = rest1 === rest2 || Curry._2(TypePairs.mem, type_pairs, [
+    const same_row = rest1 === rest2 || TypePairs.mem(type_pairs, [
       rest1,
       rest2
     ]) || rename && Stdlib__List.mem([
@@ -35981,7 +35981,7 @@ function eqtype_kind(k1, k2) {
 function equal$5(env, rename, tyl1, tyl2) {
   try {
     univar_pairs.contents = /* [] */ 0;
-    eqtype_list(rename, Curry._1(TypePairs.create, 11), {
+    eqtype_list(rename, TypePairs.create(11), {
       contents: /* [] */ 0
     }, env, tyl1, tyl2);
     return true;
@@ -36147,7 +36147,7 @@ function moregen_clty(trace, type_pairs, env, cty1, cty2) {
 
 function match_class_types(traceOpt, env, pat_sch, subj_sch) {
   const trace = traceOpt !== undefined ? traceOpt : true;
-  const type_pairs = Curry._1(TypePairs.create, 53);
+  const type_pairs = TypePairs.create(53);
   const old_level = current_level.contents;
   current_level.contents = 99999999;
   const match = instance_class(/* [] */ 0, subj_sch);
@@ -36159,7 +36159,7 @@ function match_class_types(traceOpt, env, pat_sch, subj_sch) {
   const sign2 = signature_of_class_type(subj);
   const t1 = repr(sign1.csig_self);
   const t2 = repr(sign2.csig_self);
-  Curry._3(TypePairs.add, type_pairs, [
+  TypePairs.add(type_pairs, [
     t1,
     t2
   ], undefined);
@@ -36479,7 +36479,7 @@ function equal_clty(trace, type_pairs, subst, env, cty1, cty2) {
 }
 
 function match_class_declarations(env, patt_params, patt_type, subj_params, subj_type) {
-  const type_pairs = Curry._1(TypePairs.create, 53);
+  const type_pairs = TypePairs.create(53);
   const subst = {
     contents: /* [] */ 0
   };
@@ -36487,7 +36487,7 @@ function match_class_declarations(env, patt_params, patt_type, subj_params, subj
   const sign2 = signature_of_class_type(subj_type);
   const t1 = repr(sign1.csig_self);
   const t2 = repr(sign2.csig_self);
-  Curry._3(TypePairs.add, type_pairs, [
+  TypePairs.add(type_pairs, [
     t1,
     t2
   ], undefined);
@@ -37349,7 +37349,7 @@ function enlarge_type(env, ty) {
   ];
 }
 
-const subtypes = Curry._1(TypePairs.create, 17);
+const subtypes = TypePairs.create(17);
 
 function subtype_error(env, trace) {
   throw new Caml_js_exceptions.MelangeError(Subtype, {
@@ -37371,7 +37371,7 @@ function subtype_rec(env, _trace, _t1, _t2, _cstrs) {
       return cstrs;
     }
     try {
-      Curry._2(TypePairs.find, subtypes, [
+      TypePairs.find(subtypes, [
         t1$1,
         t2$1
       ]);
@@ -37380,7 +37380,7 @@ function subtype_rec(env, _trace, _t1, _t2, _cstrs) {
     catch (raw_exn){
       const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
       if (exn.MEL_EXN_ID === Stdlib.Not_found) {
-        Curry._3(TypePairs.add, subtypes, [
+        TypePairs.add(subtypes, [
           t1$1,
           t2$1
         ], undefined);
@@ -38220,7 +38220,7 @@ function subtype_rec(env, _trace, _t1, _t2, _cstrs) {
 }
 
 function subtype(env, ty1, ty2) {
-  Curry._1(TypePairs.clear, subtypes);
+  TypePairs.clear(subtypes);
   univar_pairs.contents = /* [] */ 0;
   const cstrs = subtype_rec(env, {
     hd: [
@@ -38229,7 +38229,7 @@ function subtype(env, ty1, ty2) {
     ],
     tl: /* [] */ 0
   }, ty1, ty2, /* [] */ 0);
-  Curry._1(TypePairs.clear, subtypes);
+  TypePairs.clear(subtypes);
   return function (param) {
     Stdlib__List.iter((function (param) {
       try {
@@ -38529,9 +38529,9 @@ function normalize_type(env, ty) {
   }, ty);
 }
 
-const nondep_hash = Curry._1(TypeHash.create, 47);
+const nondep_hash = TypeHash.create(47);
 
-const nondep_variants = Curry._1(TypeHash.create, 17);
+const nondep_variants = TypeHash.create(17);
 
 function nondep_type_rec(env, id, _ty) {
   while (true) {
@@ -38554,7 +38554,7 @@ function nondep_type_rec(env, id, _ty) {
     }
     if (exit === 1) {
       try {
-        return Curry._2(TypeHash.find, nondep_hash, ty);
+        return TypeHash.find(nondep_hash, ty);
       }
       catch (raw_exn){
         const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
@@ -38563,7 +38563,7 @@ function nondep_type_rec(env, id, _ty) {
             TAG: /* Tvar */ 0,
             _0: undefined
           });
-          Curry._3(TypeHash.add, nondep_hash, ty, ty$p);
+          TypeHash.add(nondep_hash, ty, ty$p);
           const row = ty.desc;
           let tmp;
           let exit$1 = 0;
@@ -38633,8 +38633,8 @@ function nondep_type_rec(env, id, _ty) {
                 const row$1 = row_repr_aux(/* [] */ 0, row._0);
                 const more = repr(row$1.row_more);
                 try {
-                  const ty2 = Curry._2(TypeHash.find, nondep_variants, more);
-                  Curry._3(TypeHash.add, nondep_hash, ty, ty2);
+                  const ty2 = TypeHash.find(nondep_variants, more);
+                  TypeHash.add(nondep_hash, ty, ty2);
                   tmp = {
                     TAG: /* Tlink */ 6,
                     _0: ty2
@@ -38643,7 +38643,7 @@ function nondep_type_rec(env, id, _ty) {
                 catch (raw_exn$2){
                   const exn$2 = Caml_js_exceptions.internalToOCamlException(raw_exn$2);
                   if (exn$2.MEL_EXN_ID === Stdlib.Not_found) {
-                    Curry._3(TypeHash.add, nondep_variants, more, ty$p);
+                    TypeHash.add(nondep_variants, more, ty$p);
                     const $$static = static_row(row$1);
                     const more$p = $$static ? newty2(100000000, /* Tnil */ 0) : more;
                     const row$2 = copy_row((function (param) {
@@ -38712,15 +38712,15 @@ function nondep_type_rec(env, id, _ty) {
 function nondep_type(env, id, ty) {
   try {
     const ty$p = nondep_type_rec(env, id, ty);
-    Curry._1(TypeHash.clear, nondep_hash);
-    Curry._1(TypeHash.clear, nondep_variants);
+    TypeHash.clear(nondep_hash);
+    TypeHash.clear(nondep_variants);
     return ty$p;
   }
   catch (raw_exn){
     const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
     if (exn.MEL_EXN_ID === Stdlib.Not_found) {
-      Curry._1(TypeHash.clear, nondep_hash);
-      Curry._1(TypeHash.clear, nondep_variants);
+      TypeHash.clear(nondep_hash);
+      TypeHash.clear(nondep_variants);
       throw new Caml_js_exceptions.MelangeError(Stdlib.Not_found, {
           MEL_EXN_ID: Stdlib.Not_found
         });
@@ -38824,8 +38824,8 @@ function nondep_type_decl(env, mid, id, is_covariant, decl) {
         throw exn$1;
       }
     }
-    Curry._1(TypeHash.clear, nondep_hash);
-    Curry._1(TypeHash.clear, nondep_variants);
+    TypeHash.clear(nondep_hash);
+    TypeHash.clear(nondep_variants);
     const priv = tm !== undefined && has_constr_row(tm) ? /* Private */ 0 : decl.type_private;
     return {
       type_params: params,
@@ -38842,8 +38842,8 @@ function nondep_type_decl(env, mid, id, is_covariant, decl) {
   catch (raw_exn$2){
     const exn$2 = Caml_js_exceptions.internalToOCamlException(raw_exn$2);
     if (exn$2.MEL_EXN_ID === Stdlib.Not_found) {
-      Curry._1(TypeHash.clear, nondep_hash);
-      Curry._1(TypeHash.clear, nondep_variants);
+      TypeHash.clear(nondep_hash);
+      TypeHash.clear(nondep_variants);
       throw new Caml_js_exceptions.MelangeError(Stdlib.Not_found, {
           MEL_EXN_ID: Stdlib.Not_found
         });
@@ -38896,8 +38896,8 @@ function nondep_extension_constructor(env, mid, ext) {
     const ret_type = may_map((function (param) {
       return nondep_type_rec(env, mid, param);
     }), ext.ext_ret_type);
-    Curry._1(TypeHash.clear, nondep_hash);
-    Curry._1(TypeHash.clear, nondep_variants);
+    TypeHash.clear(nondep_hash);
+    TypeHash.clear(nondep_variants);
     return {
       ext_type_path: match[0],
       ext_type_params: match[1],
@@ -38911,8 +38911,8 @@ function nondep_extension_constructor(env, mid, ext) {
   catch (raw_exn){
     const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
     if (exn.MEL_EXN_ID === Stdlib.Not_found) {
-      Curry._1(TypeHash.clear, nondep_hash);
-      Curry._1(TypeHash.clear, nondep_variants);
+      TypeHash.clear(nondep_hash);
+      TypeHash.clear(nondep_variants);
       throw new Caml_js_exceptions.MelangeError(Stdlib.Not_found, {
           MEL_EXN_ID: Stdlib.Not_found
         });
@@ -39000,8 +39000,8 @@ function nondep_class_declaration(env, id, decl) {
     cty_loc: decl.cty_loc,
     cty_attributes: decl.cty_attributes
   };
-  Curry._1(TypeHash.clear, nondep_hash);
-  Curry._1(TypeHash.clear, nondep_variants);
+  TypeHash.clear(nondep_hash);
+  TypeHash.clear(nondep_variants);
   return decl$1;
 }
 
@@ -39032,8 +39032,8 @@ function nondep_cltype_declaration(env, id, decl) {
     clty_loc: decl_clty_loc,
     clty_attributes: decl_clty_attributes
   };
-  Curry._1(TypeHash.clear, nondep_hash);
-  Curry._1(TypeHash.clear, nondep_variants);
+  TypeHash.clear(nondep_hash);
+  TypeHash.clear(nondep_variants);
   return decl$1;
 }
 
@@ -62766,11 +62766,11 @@ function unify_pat_types_gadt(loc, env, ty, ty$p) {
         unify$1(env, ty, ty$p);
       }));
       newtype_level.contents = undefined;
-      return Curry._1(TypePairs.clear, unify_eq_set);
+      return TypePairs.clear(unify_eq_set);
     }
     catch (raw_e){
       const e = Caml_js_exceptions.internalToOCamlException(raw_e);
-      Curry._1(TypePairs.clear, unify_eq_set);
+      TypePairs.clear(unify_eq_set);
       if (e.MEL_EXN_ID === Unify) {
         throw new Caml_js_exceptions.MelangeError(Unify, {
             MEL_EXN_ID: Unify,

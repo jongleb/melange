@@ -14,6 +14,12 @@ Unreleased
   `Curry.__n` when it is called in a loop or by a local recursive function,
   or passed unchanged through self-recursion, instead of going through
   `Curry._n` on every call
+- compiler: call the functions of recursive modules directly, both when the
+  modules compile to a `let rec` of functions and when they go through
+  `Caml_module.init_mod`
+- compiler: record in `.cmj` files the arities of the functions a functor
+  defines, so that `M.f x y` is a direct call when `M` is the application of
+  a functor from another module
 
 6.0.1-54 2025-11-29
 ---------------

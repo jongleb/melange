@@ -1468,13 +1468,13 @@ function mk_state(ncol, desc) {
 
 function find_state(re, desc) {
   try {
-    return Curry._2(Table.find, re.states, desc);
+    return Table.find(re.states, desc);
   }
   catch (raw_exn){
     const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
     if (exn.MEL_EXN_ID === Stdlib.Not_found) {
       const st = mk_state(re.ncol, desc);
-      Curry._3(Table.add, re.states, desc, st);
+      Table.add(re.states, desc, st);
       return st;
     }
     throw exn;
@@ -3103,7 +3103,7 @@ function compile(r) {
     tbl: {
       contents: [false]
     },
-    states: Curry._1(Table.create, 97),
+    states: Table.create(97),
     group_count: group_count
   };
 }

@@ -94,7 +94,8 @@ let simplify_alias =
     | Constant (Const_int { i = _; _ }) -> Eval_true
     | Constant (Const_js_false | Const_js_null | Const_js_undefined _) ->
         Eval_false
-    | Constant _ | Module _ | FunctionId _ | Exception | Parameter _ | NA
+    | Constant _ | Module _ | FunctionId _ | Exception | Module_arities _
+    | Parameter _ | NA
     | OptionalBlock (_, (Undefined | Null | Null_undefined))
     | (exception Not_found) ->
         Eval_unknown
@@ -248,7 +249,8 @@ let simplify_alias =
                           | Parameter _ -> false
                           | Normal_optional _ | OptionalBlock _
                           | ImmutableBlock _ | MutableBlock _ | Constant _
-                          | Module _ | FunctionId _ | Exception | NA ->
+                          | Module _ | FunctionId _ | Exception
+                          | Module_arities _ | NA ->
                               true
                           | exception Not_found -> true)
                       | _ -> true)

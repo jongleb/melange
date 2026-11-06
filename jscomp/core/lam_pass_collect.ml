@@ -58,6 +58,36 @@ let annotate (meta : Lam_stats.t) rec_flag (k : Ident.t) (arity : Lam_arity.t)
     alias propgation - and toplevel identifiers, this needs to be exported
 *)
 let collect_info =
+  let functor_result (lam : Lam.t) =
+    (* [F (X)], [F] a functor of another compilation unit whose result has
+       fields of known arities *)
+    match lam with
+    | Lapply
+        {
+          ap_func =
+            Lprim
+              {
+                primitive = Pfield (_, Fld_module { name });
+                args = [ Lglobal_module { id; dynamic_import } ];
+                _;
+              };
+          ap_args;
+          _;
+        } -> (
+        match
+          Lam_compile_env.query_external_id_info ~dynamic_import id name
+        with
+        | Some { arity = Functor { arity = Arity_info ([ n ], _); result }; _ }
+          when List.length ap_args = n ->
+            Some
+              (Array.map result ~f:(fun (arity : Lam_arity.t) ->
+                   match arity with
+                   | Arity_info (_ :: _, _) ->
+                       Lam_id_kind.Field_arity.Function arity
+                   | Arity_na | Arity_info ([], _) -> Unknown))
+        | Some { arity = Single _ | Submodule _ | Functor _; _ } | None -> None)
+    | _ -> None
+  in
   let rec collect_bind (meta : Lam_stats.t) rec_flag
       (mutability : Asttypes.mutable_flag) (ident : Ident.t) (lam : Lam.t) =
     match lam with
@@ -108,29 +138,36 @@ let collect_info =
             so -- it would still iterate internally
         *)
         List.iter
-          ~f:(fun p -> Ident.Hashtbl.add meta.ident_tbl ~key:p ~data:(Parameter Lam_arity.na))
+          ~f:(fun p ->
+            Ident.Hashtbl.add meta.ident_tbl ~key:p
+              ~data:(Parameter Lam_arity.na))
           params;
         let arity = Lam_arity_analysis.get_arity meta lam in
         annotate meta rec_flag ident arity lam;
         collect meta body
     | x -> (
         collect meta x;
-        match (Ident.Set.mem ident meta.export_idents, mutability) with
-        | true, (Immutable | Mutable) ->
-            annotate meta rec_flag ident
-              (Lam_arity_analysis.get_arity meta x)
-              lam
-        | false, Immutable -> (
-            (* A local binding to a value that is not syntactically a
+        match (functor_result x, mutability) with
+        | Some fields, Immutable ->
+            Ident.Hashtbl.replace meta.ident_tbl ~key:ident
+              ~data:(Module_arities fields)
+        | Some _, Mutable | None, (Immutable | Mutable) -> (
+            match (Ident.Set.mem ident meta.export_idents, mutability) with
+            | true, (Immutable | Mutable) ->
+                annotate meta rec_flag ident
+                  (Lam_arity_analysis.get_arity meta x)
+                  lam
+            | false, Immutable -> (
+                (* A local binding to a value that is not syntactically a
                function, e.g. [let g = if c then f1 else f2] or
                [let h = f x]. Only the arity is recorded: [lambda] stays
                [None] so the inliner never duplicates [x]. *)
-            match Lam_arity_analysis.get_arity meta x with
-            | Arity_info (_ :: _, _) as arity ->
-                Ident.Hashtbl.replace meta.ident_tbl ~key:ident
-                  ~data:(FunctionId { arity; lambda = None })
-            | Arity_na | Arity_info ([], _) -> ())
-        | false, Mutable -> ())
+                match Lam_arity_analysis.get_arity meta x with
+                | Arity_info (_ :: _, _) as arity ->
+                    Ident.Hashtbl.replace meta.ident_tbl ~key:ident
+                      ~data:(FunctionId { arity; lambda = None })
+                | Arity_na | Arity_info ([], _) -> ())
+            | false, Mutable -> ()))
   and collect meta (lam : Lam.t) =
     match lam with
     | Lconst _ -> ()
@@ -141,7 +178,9 @@ let collect_info =
     | Lfunction { params; body = l; _ } ->
         (* functor ? *)
         List.iter
-          ~f:(fun p -> Ident.Hashtbl.add meta.ident_tbl ~key:p ~data:(Parameter Lam_arity.na))
+          ~f:(fun p ->
+            Ident.Hashtbl.add meta.ident_tbl ~key:p
+              ~data:(Parameter Lam_arity.na))
           params;
         collect meta l
     | Llet (_, ident, arg, body) ->
@@ -152,8 +191,7 @@ let collect_info =
         collect meta body
     | Lletrec (bindings, body) ->
         (match bindings with
-        | [ (ident, arg) ] ->
-            collect_bind meta Lam_self_rec Immutable ident arg
+        | [ (ident, arg) ] -> collect_bind meta Lam_self_rec Immutable ident arg
         | _ ->
             List.iter
               ~f:(fun (ident, arg) ->
@@ -161,6 +199,73 @@ let collect_info =
               bindings);
         collect meta body
     | Lglobal_module _ -> ()
+    | Lprim
+        { primitive = Pupdate_mod; args = [ Lconst shape; Lvar m; value ]; _ }
+      -> (
+        collect meta value;
+        let rec structure (lam : Lam.t) =
+          match lam with
+          | Llet (_, _, _, body) | Lmutlet (_, _, body) | Lletrec (_, body) ->
+              structure body
+          | _ -> lam
+        in
+        let rec field (shape : Lam.Constant.t) (element : Lam_id_kind.Element.t)
+            : Lam_id_kind.Field_arity.t =
+          match (shape, element) with
+          | Const_int { i = 0l; _ }, SimpleForm value -> (
+              (* [CamlinternalMod.Function]: [update_mod] stores [value]
+                 itself *)
+              match Lam_arity_analysis.get_arity meta value with
+              | Arity_info (_ :: _, _) as arity -> Function arity
+              | Arity_na | Arity_info ([], _) -> Unknown)
+          | Const_block (0, _, [ Const_block (0, _, components) ]), _ -> (
+              let elements =
+                match element with
+                | Block elements -> Some elements
+                | SimpleForm (Lvar v) -> (
+                    match Ident.Hashtbl.find_opt meta.ident_tbl v with
+                    | Some (ImmutableBlock elements) -> Some elements
+                    | Some _ | None -> None)
+                | SimpleForm _ | NA -> None
+              in
+              match elements with
+              | Some elements
+                when List.length components = Array.length elements ->
+                  Module
+                    (Array.of_list
+                       (List.mapi components
+                          ~f:(fun i (component : Lam.Constant.t) ->
+                            match component with
+                            | Const_block (0, _, [ shape; Const_string _ ]) ->
+                                field shape elements.(i)
+                            | _ -> Unknown)))
+              | Some _ | None -> Unknown)
+          | _ -> Unknown
+        in
+        let fields =
+          match (shape, functor_result (structure value)) with
+          | Const_block (0, _, [ Const_block (0, _, components) ]), Some result
+            when List.length components = Array.length result ->
+              (* without a coercion, the result has the layout of the
+                 signature *)
+              Lam_id_kind.Field_arity.Module
+                (Array.of_list
+                   (List.mapi components
+                      ~f:(fun i (component : Lam.Constant.t) ->
+                        match component with
+                        | Const_block
+                            (0, _, [ Const_int { i = 0l; _ }; Const_string _ ])
+                          ->
+                            result.(i)
+                        | _ -> Unknown)))
+          | _, (Some _ | None) ->
+              field shape (Lam_id_kind.Element.of_lambda (structure value))
+        in
+        match fields with
+        | Module fields ->
+            Ident.Hashtbl.replace meta.ident_tbl ~key:m
+              ~data:(Module_arities fields)
+        | Function _ | Unknown -> ())
     | Lprim { args; _ } -> List.iter ~f:(collect meta) args
     | Lswitch (l, { sw_failaction; sw_consts; sw_blocks; _ }) ->
         collect meta l;
