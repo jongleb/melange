@@ -34,9 +34,9 @@ type rec_flag = Lam_rec | Lam_non_rec | Lam_self_rec
 *)
 
 module Element = struct
-  type t = NA | SimpleForm of Lam.t
+  type t = NA | SimpleForm of Lam.t | Block of t array
 
-  let of_lambda = function
+  let rec of_lambda = function
     | ( Lam.Lvar _ | Lconst _
       | Lprim
           {
@@ -45,6 +45,8 @@ module Element = struct
             _;
           } ) as lam ->
         SimpleForm lam
+    | Lprim { primitive = Pmakeblock (_, _, Immutable); args; _ } ->
+        Block (Array.of_list_map args ~f:of_lambda)
     (* | Lfunction _  *)
     | _ -> NA
 end

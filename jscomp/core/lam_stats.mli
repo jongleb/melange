@@ -39,3 +39,8 @@ type t = {
 
 val print : t -> _ Pp.t
 val make : export_idents:Ident.t list -> export_ident_sets:Ident.Set.t -> t
+
+val block_elements : t -> Lam.t -> Lam_id_kind.Element.t array option
+(** The elements of the immutable block that [lam] evaluates to, when [lam]
+    is a variable bound to such a block or a chain of fields of one that ends
+    in a block built in place. *)

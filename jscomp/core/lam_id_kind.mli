@@ -32,7 +32,13 @@ type rec_flag =
 (* not inlining in this case *)
 
 module Element : sig
-  type t = NA | SimpleForm of Lam.t
+  type t =
+    | NA
+    | SimpleForm of Lam.t
+    | Block of t array
+        (** An immutable block built in place, e.g. a submodule constrained
+            by a signature. Only its elements can be substituted, never the
+            block itself. *)
 end
 
 type boxed_nullable = Undefined | Null | Null_undefined

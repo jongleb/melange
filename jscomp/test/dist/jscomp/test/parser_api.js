@@ -3528,7 +3528,7 @@ function get_pos_info(pos) {
 }
 
 function print_loc(ppf, loc) {
-  Curry._1(Misc_Color.setup, color.contents);
+  setup(color.contents);
   const match = get_pos_info(loc.loc_start);
   const startchar = match[2];
   const file = match[0];
@@ -3645,7 +3645,7 @@ function print_loc(ppf, loc) {
 }
 
 function print$1(ppf, loc) {
-  Curry._1(Misc_Color.setup, color.contents);
+  setup(color.contents);
   if (loc.loc_start.pos_fname === "//toplevel//" && highlight_locations(ppf, {
       hd: loc,
       tl: /* [] */ 0
@@ -3693,7 +3693,7 @@ function print$1(ppf, loc) {
 const error_prefix = "Error";
 
 function print_error_prefix(ppf, param) {
-  Curry._1(Misc_Color.setup, color.contents);
+  setup(color.contents);
   Curry._1(Stdlib__Format.fprintf(ppf)({
     TAG: /* Format */ 0,
     _0: {
@@ -3739,7 +3739,7 @@ function print_error_cur_file(ppf, param) {
 
 function default_warning_printer(loc, ppf, w) {
   if (is_active(w)) {
-    Curry._1(Misc_Color.setup, color.contents);
+    setup(color.contents);
     print$1(ppf, loc);
     return Curry._3(Stdlib__Format.fprintf(ppf)({
       TAG: /* Format */ 0,
@@ -3822,7 +3822,7 @@ function mknoloc(txt) {
 function pp_ksprintf(before, k, fmt) {
   const buf = Stdlib__Buffer.create(64);
   const ppf = Stdlib__Format.formatter_of_buffer(buf);
-  Curry._1(Misc_Color.set_color_tag_handling, ppf);
+  set_color_tag_handling(ppf);
   if (before !== undefined) {
     Curry._1(before, ppf);
   }
@@ -6794,7 +6794,7 @@ function mkpat(d) {
 }
 
 function mkexp(d) {
-  return Curry._3(Ast_helper_Exp.mk, symbol_rloc(), undefined, d);
+  return mk$2(symbol_rloc(), undefined, d);
 }
 
 function mkmty(d) {
@@ -6822,11 +6822,11 @@ function mkcty(d) {
 }
 
 function mkctf(attrs, docs, d) {
-  return Curry._4(Ast_helper_Ctf.mk, symbol_rloc(), attrs, docs, d);
+  return mk$9(symbol_rloc(), attrs, docs, d);
 }
 
 function mkcf(attrs, docs, d) {
-  return Curry._4(Ast_helper_Cf.mk, symbol_rloc(), attrs, docs, d);
+  return mk$10(symbol_rloc(), attrs, docs, d);
 }
 
 function mkoption(d) {
@@ -6876,7 +6876,7 @@ function reloc_exp(x) {
 
 function mkoperator(name, pos) {
   const loc = rhs_loc(pos);
-  return Curry._3(Ast_helper_Exp.mk, loc, undefined, {
+  return mk$2(loc, undefined, {
     TAG: /* Pexp_ident */ 0,
     _0: {
       txt: {
@@ -6899,7 +6899,7 @@ function mkpatvar(name, pos) {
 }
 
 function ghexp(d) {
-  return Curry._3(Ast_helper_Exp.mk, symbol_gloc(), undefined, d);
+  return mk$2(symbol_gloc(), undefined, d);
 }
 
 function ghpat(d) {
@@ -6939,7 +6939,7 @@ function neg_float_string(f) {
 }
 
 function mkexp_cons(consloc, args, loc) {
-  return Curry._3(Ast_helper_Exp.mk, loc, undefined, {
+  return mk$2(loc, undefined, {
     TAG: /* Pexp_construct */ 9,
     _0: {
       txt: {
@@ -6977,7 +6977,7 @@ function mktailexp(nilloc, param) {
       loc_end: loc_loc_end,
       loc_ghost: true
     };
-    const arg = Curry._3(Ast_helper_Exp.mk, loc, undefined, {
+    const arg = mk$2(loc, undefined, {
       TAG: /* Pexp_tuple */ 8,
       _0: {
         hd: e1,
@@ -7008,7 +7008,7 @@ function mktailexp(nilloc, param) {
     txt: nil_txt,
     loc: loc$1
   };
-  return Curry._3(Ast_helper_Exp.mk, loc$1, undefined, {
+  return mk$2(loc$1, undefined, {
     TAG: /* Pexp_construct */ 9,
     _0: nil,
     _1: undefined
@@ -7459,15 +7459,7 @@ function text_def(pos) {
 function extra_text(text, pos, items) {
   const pre_extras = get_pre_extra_text(Stdlib__Parsing.rhs_start_pos(pos));
   const post_extras = get_post_extra_text(Stdlib__Parsing.rhs_end_pos(pos));
-  return Stdlib.$at(Curry._1(text, pre_extras), Stdlib.$at(items, Curry._1(text, post_extras)));
-}
-
-function extra_cstr(pos, items) {
-  return extra_text(Ast_helper_Cf.text, pos, items);
-}
-
-function extra_csig(pos, items) {
-  return extra_text(Ast_helper_Ctf.text, pos, items);
+  return Stdlib.$at(text(pre_extras), Stdlib.$at(items, text(post_extras)));
 }
 
 function add_nonrec(rf, attrs, pos) {
@@ -8770,7 +8762,7 @@ const yyact = [
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
     return {
       pcstr_self: _1,
-      pcstr_fields: extra_cstr(2, Stdlib__List.rev(_2))
+      pcstr_fields: extra_text(text$3, 2, Stdlib__List.rev(_2))
     };
   }),
   (function (__caml_parser_env) {
@@ -8796,7 +8788,7 @@ const yyact = [
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
     return Stdlib.$at({
       hd: _2,
-      tl: Curry._1(Ast_helper_Cf.text, get_text(Stdlib__Parsing.rhs_start_pos(2)))
+      tl: text$3(get_text(Stdlib__Parsing.rhs_start_pos(2)))
     }, _1);
   }),
   (function (__caml_parser_env) {
@@ -9150,7 +9142,7 @@ const yyact = [
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
     return {
       pcsig_self: _1,
-      pcsig_fields: extra_csig(2, Stdlib__List.rev(_2))
+      pcsig_fields: extra_text(text$2, 2, Stdlib__List.rev(_2))
     };
   }),
   (function (__caml_parser_env) {
@@ -9167,7 +9159,7 @@ const yyact = [
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
     return Stdlib.$at({
       hd: _2,
-      tl: Curry._1(Ast_helper_Ctf.text, get_text(Stdlib__Parsing.rhs_start_pos(2)))
+      tl: text$2(get_text(Stdlib__Parsing.rhs_start_pos(2)))
     }, _1);
   }),
   (function (__caml_parser_env) {
@@ -10224,7 +10216,7 @@ const yyact = [
   (function (__caml_parser_env) {
     const _1 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return Curry._2(Ast_helper_Exp.attr, _1, _2);
+    return attr$2(_1, _2);
   }),
   (function (__caml_parser_env) {
     const _1 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
@@ -11013,13 +11005,21 @@ const yyact = [
   (function (__caml_parser_env) {
     const _1 = Stdlib__Parsing.peek_val(__caml_parser_env, 2);
     const _3 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return Curry._3(Ast_helper_Exp.$$case, _1, undefined, _3);
+    return {
+      pc_lhs: _1,
+      pc_guard: undefined,
+      pc_rhs: _3
+    };
   }),
   (function (__caml_parser_env) {
     const _1 = Stdlib__Parsing.peek_val(__caml_parser_env, 4);
     const _3 = Stdlib__Parsing.peek_val(__caml_parser_env, 2);
     const _5 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return Curry._3(Ast_helper_Exp.$$case, _1, _3, _5);
+    return {
+      pc_lhs: _1,
+      pc_guard: _3,
+      pc_rhs: _5
+    };
   }),
   (function (__caml_parser_env) {
     return Stdlib__Parsing.peek_val(__caml_parser_env, 0);

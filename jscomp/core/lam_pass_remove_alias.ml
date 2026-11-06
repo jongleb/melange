@@ -37,10 +37,10 @@ module Outcome = struct
     Format.fprintf fmt "%s" s
 end
 
-(** [field_flatten_get cb v i tbl]
+(** [field_flatten_get tbl ~f ~element v i]
     try to remove the indirection of [v.(i)] by inlining when [v]
-    is a known block,
-    if not, it will call [cb ()].
+    is a known block, passing the known element to [element];
+    if not, it will call [f ()].
 
     Note due to different control flow, a constant block
     may result in out-of bound access, in that case, we should
@@ -53,7 +53,7 @@ end
       | A x -> x  (* only access field [0]*)
       | B (x,y) -> x + y (* Here it will try to access field [1] *)
     }} *)
-let field_flatten_get (tbl : Lam_id_kind.t Ident.Hashtbl.t) ~f v i
+let field_flatten_get (tbl : Lam_id_kind.t Ident.Hashtbl.t) ~f ~element v i
     ~(info : Lambda.field_dbg_info) : Lam.t =
   match Ident.Hashtbl.find tbl v with
   | Module g ->
@@ -62,7 +62,10 @@ let field_flatten_get (tbl : Lam_id_kind.t Ident.Hashtbl.t) ~f v i
         ~args:[ Lam.global_module ~dynamic_import:false g ]
         ~loc:Location.none
   | ImmutableBlock arr -> (
-      match arr.(i) with NA -> f () | SimpleForm l -> l | exception _ -> f ())
+      match arr.(i) with
+      | NA | Block _ -> f ()
+      | SimpleForm l -> element l
+      | exception _ -> f ())
   | Constant (Const_block (_, _, ls)) -> (
       match List.nth ls i with exception Failure _ -> f () | x -> Lam.const x)
   | _ | (exception Not_found) -> f ()
@@ -103,11 +106,30 @@ let simplify_alias =
       -> (
         (* ATTENTION:
            Main use case, we should detect inline all immutable block .. *)
+        let element (element : Lam.t) =
+          (* A module constrained by a signature is a block of
+             [Pfield (k, Lvar m)] elements, one per field of [m];
+             resolve them so that a path such as [M.N.f] reaches [f]
+             itself. *)
+          match element with
+          | Lprim { primitive = Pfield _; args = [ Lvar _ ]; _ } ->
+              simpl meta element
+          | _ -> element
+        in
         match simpl meta arg with
         | (Lvar v | Lmutvar v) as l ->
             field_flatten_get meta.ident_tbl ~info
               ~f:(fun () -> Lam.prim ~primitive ~args:[ l ] ~loc)
-              v i
+              ~element v i
+        | Lprim { primitive = Pfield _; args = [ _ ]; _ } as l -> (
+            (* [l] is a field of a block that was built in place inside
+               another block, e.g. [Parser_env.Peek] *)
+            match Lam_stats.block_elements meta l with
+            | Some elements when i < Array.length elements -> (
+                match elements.(i) with
+                | SimpleForm l -> element l
+                | NA | Block _ -> Lam.prim ~primitive ~args:[ l ] ~loc)
+            | Some _ | None -> Lam.prim ~primitive ~args:[ l ] ~loc)
         | l -> Lam.prim ~primitive ~args:[ l ] ~loc)
     | Lprim { primitive = Popaque; _ } -> lam
     | Lprim
