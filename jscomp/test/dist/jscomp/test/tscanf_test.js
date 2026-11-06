@@ -3325,7 +3325,7 @@ function scan_char_list(param) {
 
 function scan_float_list_list(param) {
   return scan_list$4((function (ib, k) {
-    return Curry._1(k, scan_list$4(scan_float, ib));
+    return k(scan_list$4(scan_float, ib));
   }), param);
 }
 
@@ -3359,7 +3359,7 @@ function test340(param) {
 
 function scan_list_list(scan_elems, ib) {
   return scan_list$4((function (ib, k) {
-    return Curry._1(k, Curry._1(scan_elems, ib));
+    return k(Curry._1(scan_elems, ib));
   }), ib);
 }
 

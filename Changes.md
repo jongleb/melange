@@ -10,6 +10,9 @@ Unreleased
 - compiler: inline applications of functors from other modules to closed
   arguments during alias simplification, so that the functions of the
   argument are inlined too
+- compiler: call a function applied to one argument directly when its type
+  is `a -> r` and `r` cannot be a function type, e.g. a callback of type
+  `int -> unit` or `'a -> bool`
 - compiler: normalise a function-typed parameter of unknown arity once with
   `Curry.__n` when it is called in a loop or by a local recursive function,
   or passed unchanged through self-recursion, instead of going through

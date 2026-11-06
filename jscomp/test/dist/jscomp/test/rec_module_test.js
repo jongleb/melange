@@ -95,6 +95,49 @@ function compare(t1, t2) {
   }
 }
 
+function add(x, t) {
+  if (/* tag */ typeof t === "number" || typeof t === "string") {
+    return {
+      TAG: /* Node */ 0,
+      l: /* Empty */ 0,
+      v: x,
+      r: /* Empty */ 0,
+      h: 1
+    };
+  }
+  const r = t.r;
+  const v = t.v;
+  const l = t.l;
+  const c = compare(x, v);
+  if (c === 0) {
+    return t;
+  }
+  if (c < 0) {
+    const ll = add(x, l);
+    if (l === ll) {
+      return t;
+    } else {
+      return bal(ll, v, r);
+    }
+  }
+  const rr = add(x, r);
+  if (r === rr) {
+    return t;
+  } else {
+    return bal(l, v, rr);
+  }
+}
+
+function singleton(x) {
+  return {
+    TAG: /* Node */ 0,
+    l: /* Empty */ 0,
+    v: x,
+    r: /* Empty */ 0,
+    h: 1
+  };
+}
+
 function cons_enum(_s, _e) {
   while (true) {
     const e = _e;
@@ -202,40 +245,82 @@ function remove(x, t) {
   }
 }
 
-function concat(t1, t2) {
-  if (/* tag */ typeof t1 === "number" || typeof t1 === "string") {
-    return t2;
-  } else if (/* tag */ typeof t2 === "number" || typeof t2 === "string") {
-    return t1;
-  } else {
-    return join(t1, min_elt(t2), remove_min_elt(t2));
-  }
+function elements_aux(_accu, _param) {
+  while (true) {
+    const param = _param;
+    const accu = _accu;
+    if (/* tag */ typeof param === "number" || typeof param === "string") {
+      return accu;
+    }
+    _param = param.l;
+    _accu = {
+      hd: param.v,
+      tl: elements_aux(accu, param.r)
+    };
+    continue;
+  };
 }
 
-function join(l, v, r) {
-  if (/* tag */ typeof l === "number" || typeof l === "string") {
-    return add_min_element(v, r);
+function seq_of_enum_(c, param) {
+  if (/* tag */ typeof c === "number" || typeof c === "string") {
+    return /* Nil */ 0;
   }
-  const lh = l.h;
-  if (/* tag */ typeof r === "number" || typeof r === "string") {
-    return add_max_element(v, l);
-  }
-  const rh = r.h;
-  if (lh > (rh + 2 | 0)) {
-    return bal(l.l, l.v, join(l.r, v, r));
-  } else if (rh > (lh + 2 | 0)) {
-    return bal(join(l, v, r.l), r.v, r.r);
-  } else {
-    return create(l, v, r);
-  }
+  const partial_arg = cons_enum(c._1, c._2);
+  return {
+    TAG: /* Cons */ 0,
+    _0: c._0,
+    _1: (function (param) {
+      return seq_of_enum_(partial_arg, param);
+    })
+  };
 }
 
-function cardinal(param) {
-  if (/* tag */ typeof param === "number" || typeof param === "string") {
-    return 0;
-  } else {
-    return (cardinal(param.l) + 1 | 0) + cardinal(param.r) | 0;
-  }
+function for_all(p, _param) {
+  while (true) {
+    const param = _param;
+    if (/* tag */ typeof param === "number" || typeof param === "string") {
+      return true;
+    }
+    if (!p(param.v)) {
+      return false;
+    }
+    if (!for_all(p, param.l)) {
+      return false;
+    }
+    _param = param.r;
+    continue;
+  };
+}
+
+function find_first_opt(f, _param) {
+  while (true) {
+    const param = _param;
+    if (/* tag */ typeof param === "number" || typeof param === "string") {
+      return;
+    }
+    const v = param.v;
+    if (f(v)) {
+      let _v0 = v;
+      let _param$1 = param.l;
+      while (true) {
+        const param$1 = _param$1;
+        const v0 = _v0;
+        if (/* tag */ typeof param$1 === "number" || typeof param$1 === "string") {
+          return Caml_option.some(v0);
+        }
+        const v$1 = param$1.v;
+        if (f(v$1)) {
+          _param$1 = param$1.l;
+          _v0 = v$1;
+          continue;
+        }
+        _param$1 = param$1.r;
+        continue;
+      };
+    }
+    _param = param.r;
+    continue;
+  };
 }
 
 function add_min_element(x, param) {
@@ -244,49 +329,6 @@ function add_min_element(x, param) {
   } else {
     return bal(add_min_element(x, param.l), param.v, param.r);
   }
-}
-
-function singleton(x) {
-  return {
-    TAG: /* Node */ 0,
-    l: /* Empty */ 0,
-    v: x,
-    r: /* Empty */ 0,
-    h: 1
-  };
-}
-
-function find_last_opt(f, _param) {
-  while (true) {
-    const param = _param;
-    if (/* tag */ typeof param === "number" || typeof param === "string") {
-      return;
-    }
-    const v = param.v;
-    if (Curry._1(f, v)) {
-      let param$1 = param.r;
-      const f$1 = Curry.__1(f);
-      let _v0 = v;
-      let _param$1 = param$1;
-      while (true) {
-        const param$2 = _param$1;
-        const v0 = _v0;
-        if (/* tag */ typeof param$2 === "number" || typeof param$2 === "string") {
-          return Caml_option.some(v0);
-        }
-        const v$1 = param$2.v;
-        if (f$1(v$1)) {
-          _param$1 = param$2.r;
-          _v0 = v$1;
-          continue;
-        }
-        _param$1 = param$2.l;
-        continue;
-      };
-    }
-    _param = param.l;
-    continue;
-  };
 }
 
 function min_elt(_param) {
@@ -366,36 +408,21 @@ function split(x, param) {
   ];
 }
 
-function add(x, t) {
-  if (/* tag */ typeof t === "number" || typeof t === "string") {
-    return {
-      TAG: /* Node */ 0,
-      l: /* Empty */ 0,
-      v: x,
-      r: /* Empty */ 0,
-      h: 1
-    };
+function join(l, v, r) {
+  if (/* tag */ typeof l === "number" || typeof l === "string") {
+    return add_min_element(v, r);
   }
-  const r = t.r;
-  const v = t.v;
-  const l = t.l;
-  const c = compare(x, v);
-  if (c === 0) {
-    return t;
+  const lh = l.h;
+  if (/* tag */ typeof r === "number" || typeof r === "string") {
+    return add_max_element(v, l);
   }
-  if (c < 0) {
-    const ll = add(x, l);
-    if (l === ll) {
-      return t;
-    } else {
-      return bal(ll, v, r);
-    }
-  }
-  const rr = add(x, r);
-  if (r === rr) {
-    return t;
+  const rh = r.h;
+  if (lh > (rh + 2 | 0)) {
+    return bal(l.l, l.v, join(l.r, v, r));
+  } else if (rh > (lh + 2 | 0)) {
+    return bal(join(l, v, r.l), r.v, r.r);
   } else {
-    return bal(l, v, rr);
+    return create(l, v, r);
   }
 }
 
@@ -416,50 +443,14 @@ function max_elt(_param) {
   };
 }
 
-function seq_of_enum_(c, param) {
-  if (/* tag */ typeof c === "number" || typeof c === "string") {
-    return /* Nil */ 0;
+function concat(t1, t2) {
+  if (/* tag */ typeof t1 === "number" || typeof t1 === "string") {
+    return t2;
+  } else if (/* tag */ typeof t2 === "number" || typeof t2 === "string") {
+    return t1;
+  } else {
+    return join(t1, min_elt(t2), remove_min_elt(t2));
   }
-  const partial_arg = cons_enum(c._1, c._2);
-  return {
-    TAG: /* Cons */ 0,
-    _0: c._0,
-    _1: (function (param) {
-      return seq_of_enum_(partial_arg, param);
-    })
-  };
-}
-
-function snoc_enum(_s, _e) {
-  while (true) {
-    const e = _e;
-    const s = _s;
-    if (/* tag */ typeof s === "number" || typeof s === "string") {
-      return e;
-    }
-    _e = {
-      TAG: /* More */ 0,
-      _0: s.v,
-      _1: s.l,
-      _2: e
-    };
-    _s = s.r;
-    continue;
-  };
-}
-
-function rev_seq_of_enum_(c, param) {
-  if (/* tag */ typeof c === "number" || typeof c === "string") {
-    return /* Nil */ 0;
-  }
-  const partial_arg = snoc_enum(c._1, c._2);
-  return {
-    TAG: /* Cons */ 0,
-    _0: c._0,
-    _1: (function (param) {
-      return rev_seq_of_enum_(partial_arg, param);
-    })
-  };
 }
 
 function inter(s1, s2) {
@@ -481,23 +472,20 @@ function inter(s1, s2) {
   }
 }
 
-function add_seq(i, m) {
-  return Stdlib__Seq.fold_left((function (s, x) {
-    return add(x, s);
-  }), m, i);
-}
-
-function create(l, v, r) {
-  let hl;
-  hl = /* tag */ typeof l === "number" || typeof l === "string" ? 0 : l.h;
-  let hr;
-  hr = /* tag */ typeof r === "number" || typeof r === "string" ? 0 : r.h;
-  return {
-    TAG: /* Node */ 0,
-    l: l,
-    v: v,
-    r: r,
-    h: hl >= hr ? hl + 1 | 0 : hr + 1 | 0
+function exists(p, _param) {
+  while (true) {
+    const param = _param;
+    if (/* tag */ typeof param === "number" || typeof param === "string") {
+      return false;
+    }
+    if (p(param.v)) {
+      return true;
+    }
+    if (exists(p, param.l)) {
+      return true;
+    }
+    _param = param.r;
+    continue;
   };
 }
 
@@ -512,32 +500,6 @@ function min_elt_opt(_param) {
       return Caml_option.some(param.v);
     }
     _param = l;
-    continue;
-  };
-}
-
-function try_join(l, v, r) {
-  if ((Caml_obj.caml_equal(l, /* Empty */ 0) || compare(max_elt(l), v) < 0) && (Caml_obj.caml_equal(r, /* Empty */ 0) || compare(v, min_elt(r)) < 0)) {
-    return join(l, v, r);
-  } else {
-    return union(l, add(v, r));
-  }
-}
-
-function find(x, _param) {
-  while (true) {
-    const param = _param;
-    if (/* tag */ typeof param === "number" || typeof param === "string") {
-      throw new Caml_js_exceptions.MelangeError(Stdlib.Not_found, {
-          MEL_EXN_ID: Stdlib.Not_found
-        });
-    }
-    const v = param.v;
-    const c = compare(x, v);
-    if (c === 0) {
-      return v;
-    }
-    _param = c < 0 ? param.l : param.r;
     continue;
   };
 }
@@ -569,7 +531,7 @@ function split_bis(x, param) {
       TAG: /* NotFound */ 0,
       _0: match._0,
       _1: (function (param) {
-        return join(Curry._1(rl, undefined), v, r);
+        return join(rl(), v, r);
       })
     };
   }
@@ -605,7 +567,7 @@ function disjoint(_s1, _s2) {
     if (!disjoint(s1.l, match._0)) {
       return false;
     }
-    _s2 = Curry._1(match._1, undefined);
+    _s2 = match._1();
     _s1 = s1.r;
     continue;
   };
@@ -619,74 +581,64 @@ function add_max_element(x, param) {
   }
 }
 
-function find_last(f, _param) {
+function try_join(l, v, r) {
+  if ((Caml_obj.caml_equal(l, /* Empty */ 0) || compare(max_elt(l), v) < 0) && (Caml_obj.caml_equal(r, /* Empty */ 0) || compare(v, min_elt(r)) < 0)) {
+    return join(l, v, r);
+  } else {
+    return union(l, add(v, r));
+  }
+}
+
+function remove_min_elt(param) {
+  if (/* tag */ typeof param === "number" || typeof param === "string") {
+    throw new Caml_js_exceptions.MelangeError("Invalid_argument", {
+        MEL_EXN_ID: "Invalid_argument",
+        _1: "Set.remove_min_elt"
+      });
+  }
+  const l = param.l;
+  if (/* tag */ typeof l === "number" || typeof l === "string") {
+    return param.r;
+  } else {
+    return bal(remove_min_elt(l), param.v, param.r);
+  }
+}
+
+function find_opt(x, _param) {
   while (true) {
     const param = _param;
     if (/* tag */ typeof param === "number" || typeof param === "string") {
-      throw new Caml_js_exceptions.MelangeError(Stdlib.Not_found, {
-          MEL_EXN_ID: Stdlib.Not_found
-        });
+      return;
     }
     const v = param.v;
-    if (Curry._1(f, v)) {
-      let param$1 = param.r;
-      const f$1 = Curry.__1(f);
-      let _v0 = v;
-      let _param$1 = param$1;
-      while (true) {
-        const param$2 = _param$1;
-        const v0 = _v0;
-        if (/* tag */ typeof param$2 === "number" || typeof param$2 === "string") {
-          return v0;
-        }
-        const v$1 = param$2.v;
-        if (f$1(v$1)) {
-          _param$1 = param$2.r;
-          _v0 = v$1;
-          continue;
-        }
-        _param$1 = param$2.l;
-        continue;
-      };
+    const c = compare(x, v);
+    if (c === 0) {
+      return Caml_option.some(v);
     }
-    _param = param.l;
+    _param = c < 0 ? param.l : param.r;
     continue;
   };
 }
 
-function find_first(f, _param) {
-  while (true) {
-    const param = _param;
-    if (/* tag */ typeof param === "number" || typeof param === "string") {
-      throw new Caml_js_exceptions.MelangeError(Stdlib.Not_found, {
-          MEL_EXN_ID: Stdlib.Not_found
-        });
+function filter(p, t) {
+  if (/* tag */ typeof t === "number" || typeof t === "string") {
+    return /* Empty */ 0;
+  }
+  const r = t.r;
+  const v = t.v;
+  const l = t.l;
+  const l$p = filter(p, l);
+  const pv = p(v);
+  const r$p = filter(p, r);
+  if (pv) {
+    if (l === l$p && r === r$p) {
+      return t;
+    } else {
+      return join(l$p, v, r$p);
     }
-    const v = param.v;
-    if (Curry._1(f, v)) {
-      let param$1 = param.l;
-      const f$1 = Curry.__1(f);
-      let _v0 = v;
-      let _param$1 = param$1;
-      while (true) {
-        const param$2 = _param$1;
-        const v0 = _v0;
-        if (/* tag */ typeof param$2 === "number" || typeof param$2 === "string") {
-          return v0;
-        }
-        const v$1 = param$2.v;
-        if (f$1(v$1)) {
-          _param$1 = param$2.l;
-          _v0 = v$1;
-          continue;
-        }
-        _param$1 = param$2.r;
-        continue;
-      };
-    }
-    _param = param.r;
-    continue;
-  };
+  } else {
+    return concat(l$p, r$p);
+  }
 }
 
 function max_elt_opt(_param) {
@@ -712,19 +664,90 @@ function height(param) {
   }
 }
 
-function remove_min_elt(param) {
+function create(l, v, r) {
+  let hl;
+  hl = /* tag */ typeof l === "number" || typeof l === "string" ? 0 : l.h;
+  let hr;
+  hr = /* tag */ typeof r === "number" || typeof r === "string" ? 0 : r.h;
+  return {
+    TAG: /* Node */ 0,
+    l: l,
+    v: v,
+    r: r,
+    h: hl >= hr ? hl + 1 | 0 : hr + 1 | 0
+  };
+}
+
+function find_last_opt(f, _param) {
+  while (true) {
+    const param = _param;
+    if (/* tag */ typeof param === "number" || typeof param === "string") {
+      return;
+    }
+    const v = param.v;
+    if (f(v)) {
+      let _v0 = v;
+      let _param$1 = param.r;
+      while (true) {
+        const param$1 = _param$1;
+        const v0 = _v0;
+        if (/* tag */ typeof param$1 === "number" || typeof param$1 === "string") {
+          return Caml_option.some(v0);
+        }
+        const v$1 = param$1.v;
+        if (f(v$1)) {
+          _param$1 = param$1.r;
+          _v0 = v$1;
+          continue;
+        }
+        _param$1 = param$1.l;
+        continue;
+      };
+    }
+    _param = param.l;
+    continue;
+  };
+}
+
+function partition(p, param) {
   if (/* tag */ typeof param === "number" || typeof param === "string") {
-    throw new Caml_js_exceptions.MelangeError("Invalid_argument", {
-        MEL_EXN_ID: "Invalid_argument",
-        _1: "Set.remove_min_elt"
-      });
+    return [
+      /* Empty */ 0,
+      /* Empty */ 0
+    ];
   }
-  const l = param.l;
-  if (/* tag */ typeof l === "number" || typeof l === "string") {
-    return param.r;
+  const v = param.v;
+  const match = partition(p, param.l);
+  const lf = match[1];
+  const lt = match[0];
+  const pv = p(v);
+  const match$1 = partition(p, param.r);
+  const rf = match$1[1];
+  const rt = match$1[0];
+  if (pv) {
+    return [
+      join(lt, v, rt),
+      concat(lf, rf)
+    ];
   } else {
-    return bal(remove_min_elt(l), param.v, param.r);
+    return [
+      concat(lt, rt),
+      join(lf, v, rf)
+    ];
   }
+}
+
+function iter(f, _param) {
+  while (true) {
+    const param = _param;
+    if (/* tag */ typeof param === "number" || typeof param === "string") {
+      return;
+    }
+    iter(f, param.l);
+    f(param.v);
+    _param = param.r;
+    continue;
+  };
 }
 
 function compare$1(s1, s2) {
@@ -753,6 +776,98 @@ function compare$1(s1, s2) {
   };
 }
 
+function rev_seq_of_enum_(c, param) {
+  if (/* tag */ typeof c === "number" || typeof c === "string") {
+    return /* Nil */ 0;
+  }
+  const partial_arg = snoc_enum(c._1, c._2);
+  return {
+    TAG: /* Cons */ 0,
+    _0: c._0,
+    _1: (function (param) {
+      return rev_seq_of_enum_(partial_arg, param);
+    })
+  };
+}
+
+function snoc_enum(_s, _e) {
+  while (true) {
+    const e = _e;
+    const s = _s;
+    if (/* tag */ typeof s === "number" || typeof s === "string") {
+      return e;
+    }
+    _e = {
+      TAG: /* More */ 0,
+      _0: s.v,
+      _1: s.l,
+      _2: e
+    };
+    _s = s.r;
+    continue;
+  };
+}
+
+function filter_map(f, t) {
+  if (/* tag */ typeof t === "number" || typeof t === "string") {
+    return /* Empty */ 0;
+  }
+  const r = t.r;
+  const v = t.v;
+  const l = t.l;
+  const l$p = filter_map(f, l);
+  const v$p = f(v);
+  const r$p = filter_map(f, r);
+  if (v$p === undefined) {
+    if (/* tag */ typeof l$p === "number" || typeof l$p === "string") {
+      return r$p;
+    } else if (/* tag */ typeof r$p === "number" || typeof r$p === "string") {
+      return l$p;
+    } else {
+      return try_join(l$p, min_elt(r$p), remove_min_elt(r$p));
+    }
+  }
+  const v$p$1 = Caml_option.valFromOption(v$p);
+  if (l === l$p && v === v$p$1 && r === r$p) {
+    return t;
+  } else {
+    return try_join(l$p, v$p$1, r$p);
+  }
+}
+
+function find_last(f, _param) {
+  while (true) {
+    const param = _param;
+    if (/* tag */ typeof param === "number" || typeof param === "string") {
+      throw new Caml_js_exceptions.MelangeError(Stdlib.Not_found, {
+          MEL_EXN_ID: Stdlib.Not_found
+        });
+    }
+    const v = param.v;
+    if (f(v)) {
+      let _v0 = v;
+      let _param$1 = param.r;
+      while (true) {
+        const param$1 = _param$1;
+        const v0 = _v0;
+        if (/* tag */ typeof param$1 === "number" || typeof param$1 === "string") {
+          return v0;
+        }
+        const v$1 = param$1.v;
+        if (f(v$1)) {
+          _param$1 = param$1.r;
+          _v0 = v$1;
+          continue;
+        }
+        _param$1 = param$1.l;
+        continue;
+      };
+    }
+    _param = param.l;
+    continue;
+  };
+}
+
 function diff(s1, s2) {
   if (/* tag */ typeof s1 === "number" || typeof s1 === "string") {
     return /* Empty */ 0;
@@ -770,6 +885,12 @@ function diff(s1, s2) {
   } else {
     return join(diff(l1, l2), v1, diff(r1, match[2]));
   }
+}
+
+function add_seq(i, m) {
+  return Stdlib__Seq.fold_left((function (s, x) {
+    return add(x, s);
+  }), m, i);
 }
 
 function subset(_s1, _s2) {
@@ -823,55 +944,6 @@ function subset(_s1, _s2) {
   };
 }
 
-function find_first_opt(f, _param) {
-  while (true) {
-    const param = _param;
-    if (/* tag */ typeof param === "number" || typeof param === "string") {
-      return;
-    }
-    const v = param.v;
-    if (Curry._1(f, v)) {
-      let param$1 = param.l;
-      const f$1 = Curry.__1(f);
-      let _v0 = v;
-      let _param$1 = param$1;
-      while (true) {
-        const param$2 = _param$1;
-        const v0 = _v0;
-        if (/* tag */ typeof param$2 === "number" || typeof param$2 === "string") {
-          return Caml_option.some(v0);
-        }
-        const v$1 = param$2.v;
-        if (f$1(v$1)) {
-          _param$1 = param$2.l;
-          _v0 = v$1;
-          continue;
-        }
-        _param$1 = param$2.r;
-        continue;
-      };
-    }
-    _param = param.r;
-    continue;
-  };
-}
-
-function elements_aux(_accu, _param) {
-  while (true) {
-    const param = _param;
-    const accu = _accu;
-    if (/* tag */ typeof param === "number" || typeof param === "string") {
-      return accu;
-    }
-    _param = param.l;
-    _accu = {
-      hd: param.v,
-      tl: elements_aux(accu, param.r)
-    };
-    continue;
-  };
-}
-
 function mem(x, _param) {
   while (true) {
     const param = _param;
@@ -887,16 +959,59 @@ function mem(x, _param) {
   };
 }
 
-function find_opt(x, _param) {
+function cardinal(param) {
+  if (/* tag */ typeof param === "number" || typeof param === "string") {
+    return 0;
+  } else {
+    return (cardinal(param.l) + 1 | 0) + cardinal(param.r) | 0;
+  }
+}
+
+function find_first(f, _param) {
   while (true) {
     const param = _param;
     if (/* tag */ typeof param === "number" || typeof param === "string") {
-      return;
+      throw new Caml_js_exceptions.MelangeError(Stdlib.Not_found, {
+          MEL_EXN_ID: Stdlib.Not_found
+        });
+    }
+    const v = param.v;
+    if (f(v)) {
+      let _v0 = v;
+      let _param$1 = param.l;
+      while (true) {
+        const param$1 = _param$1;
+        const v0 = _v0;
+        if (/* tag */ typeof param$1 === "number" || typeof param$1 === "string") {
+          return v0;
+        }
+        const v$1 = param$1.v;
+        if (f(v$1)) {
+          _param$1 = param$1.l;
+          _v0 = v$1;
+          continue;
+        }
+        _param$1 = param$1.r;
+        continue;
+      };
+    }
+    _param = param.r;
+    continue;
+  };
+}
+
+function find(x, _param) {
+  while (true) {
+    const param = _param;
+    if (/* tag */ typeof param === "number" || typeof param === "string") {
+      throw new Caml_js_exceptions.MelangeError(Stdlib.Not_found, {
+          MEL_EXN_ID: Stdlib.Not_found
+        });
     }
     const v = param.v;
     const c = compare(x, v);
     if (c === 0) {
-      return Caml_option.some(v);
+      return v;
     }
     _param = c < 0 ? param.l : param.r;
     continue;
@@ -919,23 +1034,6 @@ function equal(s1, s2) {
   return compare$1(s1, s2) === 0;
 }
 
-function iter(f, param) {
-  const f$1 = Curry.__1(f);
-  const iter$1 = function (_param) {
-    while (true) {
-      const param = _param;
-      if (/* tag */ typeof param === "number" || typeof param === "string") {
-        return;
-      }
-      iter$1(param.l);
-      f$1(param.v);
-      _param = param.r;
-      continue;
-    };
-  };
-  iter$1(param);
-}
-
 function fold(f, s, accu) {
   const f$1 = Curry.__2(f);
   const fold$1 = function (_s, _accu) {
@@ -951,105 +1049,6 @@ function fold(f, s, accu) {
     };
   };
   return fold$1(s, accu);
-}
-
-function for_all(p, param) {
-  const p$1 = Curry.__1(p);
-  const for_all$1 = function (_param) {
-    while (true) {
-      const param = _param;
-      if (/* tag */ typeof param === "number" || typeof param === "string") {
-        return true;
-      }
-      if (!p$1(param.v)) {
-        return false;
-      }
-      if (!for_all$1(param.l)) {
-        return false;
-      }
-      _param = param.r;
-      continue;
-    };
-  };
-  return for_all$1(param);
-}
-
-function exists(p, param) {
-  const p$1 = Curry.__1(p);
-  const exists$1 = function (_param) {
-    while (true) {
-      const param = _param;
-      if (/* tag */ typeof param === "number" || typeof param === "string") {
-        return false;
-      }
-      if (p$1(param.v)) {
-        return true;
-      }
-      if (exists$1(param.l)) {
-        return true;
-      }
-      _param = param.r;
-      continue;
-    };
-  };
-  return exists$1(param);
-}
-
-function filter(p, t) {
-  const p$1 = Curry.__1(p);
-  const filter$1 = function (t) {
-    if (/* tag */ typeof t === "number" || typeof t === "string") {
-      return /* Empty */ 0;
-    }
-    const r = t.r;
-    const v = t.v;
-    const l = t.l;
-    const l$p = filter$1(l);
-    const pv = p$1(v);
-    const r$p = filter$1(r);
-    if (pv) {
-      if (l === l$p && r === r$p) {
-        return t;
-      } else {
-        return join(l$p, v, r$p);
-      }
-    } else {
-      return concat(l$p, r$p);
-    }
-  };
-  return filter$1(t);
-}
-
-function partition(p, param) {
-  const p$1 = Curry.__1(p);
-  const partition$1 = function (param) {
-    if (/* tag */ typeof param === "number" || typeof param === "string") {
-      return [
-        /* Empty */ 0,
-        /* Empty */ 0
-      ];
-    }
-    const v = param.v;
-    const match = partition$1(param.l);
-    const lf = match[1];
-    const lt = match[0];
-    const pv = p$1(v);
-    const match$1 = partition$1(param.r);
-    const rf = match$1[1];
-    const rt = match$1[0];
-    if (pv) {
-      return [
-        join(lt, v, rt),
-        concat(lf, rf)
-      ];
-    } else {
-      return [
-        concat(lt, rt),
-        join(lf, v, rf)
-      ];
-    }
-  };
-  return partition$1(param);
 }
 
 function elements(s) {
@@ -1075,37 +1074,6 @@ function map(f, t) {
     }
   };
   return map$1(t);
-}
-
-function filter_map(f, t) {
-  const f$1 = Curry.__1(f);
-  const filter_map$1 = function (t) {
-    if (/* tag */ typeof t === "number" || typeof t === "string") {
-      return /* Empty */ 0;
-    }
-    const r = t.r;
-    const v = t.v;
-    const l = t.l;
-    const l$p = filter_map$1(l);
-    const v$p = f$1(v);
-    const r$p = filter_map$1(r);
-    if (v$p === undefined) {
-      if (/* tag */ typeof l$p === "number" || typeof l$p === "string") {
-        return r$p;
-      } else if (/* tag */ typeof r$p === "number" || typeof r$p === "string") {
-        return l$p;
-      } else {
-        return try_join(l$p, min_elt(r$p), remove_min_elt(r$p));
-      }
-    }
-    const v$p$1 = Caml_option.valFromOption(v$p);
-    if (l === l$p && v === v$p$1 && r === r$p) {
-      return t;
-    } else {
-      return try_join(l$p, v$p$1, r$p);
-    }
-  };
-  return filter_map$1(t);
 }
 
 function of_list(l) {
