@@ -3872,12 +3872,6 @@ const Codegen_pp = {
   ocamldoc_title: "Formatters"
 };
 
-const compare = Caml_obj.caml_compare;
-
-const funarg = {
-  compare: compare
-};
-
 function height(param) {
   if (/* tag */ typeof param === "number" || typeof param === "string") {
     return 0;
@@ -3973,7 +3967,7 @@ function add(x, data, m) {
   const d = m.d;
   const v = m.v;
   const l = m.l;
-  const c = Curry._2(funarg.compare, x, v);
+  const c = Caml_obj.caml_compare(x, v);
   if (c === 0) {
     if (d === data) {
       return m;
@@ -4012,7 +4006,7 @@ function find(x, _param) {
           MEL_EXN_ID: Stdlib.Not_found
         });
     }
-    const c = Curry._2(funarg.compare, x, param.v);
+    const c = Caml_obj.caml_compare(x, param.v);
     if (c === 0) {
       return param.d;
     }
@@ -4050,8 +4044,6 @@ function fold(f, _m, _accu) {
     continue;
   };
 }
-
-const empty_graph = /* Empty */ 0;
 
 function min_value(param) {
   const x = param[0];
@@ -4114,7 +4106,7 @@ function string_of_option(f, x) {
 }
 
 function reset(g) {
-  return Curry._2(map$1, (function (core) {
+  return map$1((function (core) {
     return {
       core: core,
       index: undefined,
@@ -4165,7 +4157,7 @@ function strong_connect(g, sccs, stack, index, v) {
     const index = param[2];
     const stack = param[1];
     const sccs = param[0];
-    const w = Curry._2(find, id, g);
+    const w = find(id, g);
     Curry._2(log({
       TAG: /* Format */ 0,
       _0: {
@@ -4347,7 +4339,7 @@ function strong_connect(g, sccs, stack, index, v) {
 
 function tarjan(g) {
   const g$1 = reset(g);
-  return Curry._3(fold, (function (param, n, param$1) {
+  return fold((function (param, n, param$1) {
     const index = param$1[2];
     const stack = param$1[1];
     const sccs = param$1[0];
@@ -5226,8 +5218,8 @@ function node_of_proto_type(param) {
 function group(proto) {
   const g = Stdlib__List.map(node_of_proto_type, proto);
   const g$1 = Stdlib__List.fold_left((function (m, n) {
-    return Curry._3(add, n.id, n, m);
-  }), empty_graph, g);
+    return add(n.id, n, m);
+  }), /* Empty */ 0, g);
   const sccs = tarjan(g$1);
   return Stdlib__List.map((function (l) {
     return Stdlib__List.map((function (id) {

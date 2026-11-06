@@ -5441,10 +5441,6 @@ function token$1(env) {
   return get_result_and_clear_state(token(env, env.lex_lb));
 }
 
-const funarg = {
-  compare: Stdlib__String.compare
-};
-
 function height(param) {
   if (/* tag */ typeof param === "number" || typeof param === "string") {
     return 0;
@@ -5536,7 +5532,7 @@ function add(x, t) {
   const r = t.r;
   const v = t.v;
   const l = t.l;
-  const c = Curry._2(funarg.compare, x, v);
+  const c = Caml.caml_string_compare(x, v);
   if (c === 0) {
     return t;
   }
@@ -5562,7 +5558,7 @@ function mem(x, _param) {
     if (/* tag */ typeof param === "number" || typeof param === "string") {
       return false;
     }
-    const c = Curry._2(funarg.compare, x, param.v);
+    const c = Caml.caml_string_compare(x, param.v);
     if (c === 0) {
       return true;
     }
@@ -5778,7 +5774,7 @@ function comment_list(env) {
 function record_export(env, param) {
   const export_name = param[1];
   const $$exports = env.exports.contents;
-  if (Curry._2(mem, export_name, $$exports)) {
+  if (mem(export_name, $$exports)) {
     return error_at(env, [
       param[0],
       {
@@ -5787,7 +5783,7 @@ function record_export(env, param) {
       }
     ]);
   } else {
-    env.exports.contents = Curry._2(add, export_name, env.exports.contents);
+    env.exports.contents = add(export_name, env.exports.contents);
     return;
   }
 }
@@ -5892,7 +5888,7 @@ function without_error_callback(env) {
 
 function add_label(env, label) {
   const newrecord = Caml_obj.caml_obj_dup(env);
-  newrecord.labels = Curry._2(add, label, env.labels);
+  newrecord.labels = add(label, env.labels);
   return newrecord;
 }
 
@@ -6313,10 +6309,6 @@ function to_parse(env, parse) {
   }
 }
 
-const funarg$1 = {
-  compare: Stdlib__String.compare
-};
-
 function height$1(param) {
   if (/* tag */ typeof param === "number" || typeof param === "string") {
     return 0;
@@ -6408,7 +6400,7 @@ function add$1(x, t) {
   const r = t.r;
   const v = t.v;
   const l = t.l;
-  const c = Curry._2(funarg$1.compare, x, v);
+  const c = Caml.caml_string_compare(x, v);
   if (c === 0) {
     return t;
   }
@@ -6434,7 +6426,7 @@ function mem$1(x, _param) {
     if (/* tag */ typeof param === "number" || typeof param === "string") {
       return false;
     }
-    const c = Curry._2(funarg$1.compare, x, param.v);
+    const c = Caml.caml_string_compare(x, param.v);
     if (c === 0) {
       return true;
     }
@@ -6442,10 +6434,6 @@ function mem$1(x, _param) {
     continue;
   };
 }
-
-const funarg$2 = {
-  compare: Stdlib__String.compare
-};
 
 function height$2(param) {
   if (/* tag */ typeof param === "number" || typeof param === "string") {
@@ -6542,7 +6530,7 @@ function add$2(x, data, m) {
   const d = m.d;
   const v = m.v;
   const l = m.l;
-  const c = Curry._2(funarg$2.compare, x, v);
+  const c = Caml.caml_string_compare(x, v);
   if (c === 0) {
     if (d === data) {
       return m;
@@ -6581,7 +6569,7 @@ function find(x, _param) {
           MEL_EXN_ID: Stdlib.Not_found
         });
     }
-    const c = Curry._2(funarg$2.compare, x, param.v);
+    const c = Caml.caml_string_compare(x, param.v);
     if (c === 0) {
       return param.d;
     }
@@ -6598,10 +6586,6 @@ function compare$1(param, param$1) {
     return loc;
   }
 }
-
-const funarg$3 = {
-  compare: compare$1
-};
 
 function height$3(param) {
   if (/* tag */ typeof param === "number" || typeof param === "string") {
@@ -6694,7 +6678,7 @@ function add$3(x, t) {
   const r = t.r;
   const v = t.v;
   const l = t.l;
-  const c = Curry._2(funarg$3.compare, x, v);
+  const c = compare$1(x, v);
   if (c === 0) {
     return t;
   }
@@ -6720,7 +6704,7 @@ function mem$2(x, _param) {
     if (/* tag */ typeof param === "number" || typeof param === "string") {
       return false;
     }
-    const c = Curry._2(funarg$3.compare, x, param.v);
+    const c = compare$1(x, param.v);
     if (c === 0) {
       return true;
     }
@@ -6734,14 +6718,14 @@ function filter_duplicate_errors(errs) {
   const match = Stdlib__List.fold_left((function (param, err) {
     const deduped = param[1];
     const set = param[0];
-    if (Curry._2(mem$2, err, set)) {
+    if (mem$2(err, set)) {
       return [
         set,
         deduped
       ];
     } else {
       return [
-        Curry._2(add$3, err, set),
+        add$3(err, set),
         {
           hd: err,
           tl: deduped
@@ -8024,7 +8008,7 @@ function pattern(check_env, _param) {
         const name = id[1].name;
         const param_names = check_env[1];
         const env = check_env[0];
-        if (Curry._2(mem$1, name, param_names)) {
+        if (mem$1(name, param_names)) {
           error_at(env, [
             id[0],
             /* StrictParamDupe */ 29
@@ -8036,7 +8020,7 @@ function pattern(check_env, _param) {
         ], id);
         return [
           match[0],
-          Curry._2(add$1, name, match[1])
+          add$1(name, match[1])
         ];
       case /* Expression */ 4 :
         error_at(check_env[0], [
@@ -10935,7 +10919,7 @@ function check_property(env, prop_map, prop) {
     }
     let prev_kinds;
     try {
-      prev_kinds = Curry._2(find, key, prop_map);
+      prev_kinds = find(key, prop_map);
     }
     catch (raw_exn){
       const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
@@ -10961,12 +10945,12 @@ function check_property(env, prop_map, prop) {
     let exit$1 = 0;
     switch (kind_string) {
       case "Init" :
-        if (Curry._2(mem$1, "Init", prev_kinds)) {
+        if (mem$1("Init", prev_kinds)) {
           strict_error_at(env, [
             prop_loc,
             /* StrictDuplicateProperty */ 33
           ]);
-        } else if (Curry._2(mem$1, "Set", prev_kinds) || Curry._2(mem$1, "Get", prev_kinds)) {
+        } else if (mem$1("Set", prev_kinds) || mem$1("Get", prev_kinds)) {
           error_at(env, [
             prop_loc,
             /* AccessorDataProperty */ 34
@@ -10979,12 +10963,12 @@ function check_property(env, prop_map, prop) {
         break;
     }
     if (exit$1 === 2) {
-      if (Curry._2(mem$1, "Init", prev_kinds)) {
+      if (mem$1("Init", prev_kinds)) {
         error_at(env, [
           prop_loc,
           /* AccessorDataProperty */ 34
         ]);
-      } else if (Curry._2(mem$1, kind_string, prev_kinds)) {
+      } else if (mem$1(kind_string, prev_kinds)) {
         error_at(env, [
           prop_loc,
           /* AccessorGetSet */ 35
@@ -10992,8 +10976,8 @@ function check_property(env, prop_map, prop) {
       }
       
     }
-    const kinds = Curry._2(add$1, kind_string, prev_kinds);
-    return Curry._3(add$2, key, kinds, prop_map);
+    const kinds = add$1(kind_string, prev_kinds);
+    return add$2(key, kinds, prop_map);
   }
   
 }
@@ -13758,7 +13742,7 @@ function statement(env) {
           } else {
             const label$1 = Curry._2(Parse.identifier, undefined, env);
             const name = label$1[1].name;
-            if (!Curry._2(mem$1, name, env.labels)) {
+            if (!mem$1(name, env.labels)) {
               error$1(env, {
                 TAG: /* UnknownLabel */ 4,
                 _0: name
@@ -13796,7 +13780,7 @@ function statement(env) {
           } else {
             const label$3 = Curry._2(Parse.identifier, undefined, env);
             const name$1 = label$3[1].name;
-            if (!Curry._2(mem$1, name$1, env.labels)) {
+            if (!mem$1(name$1, env.labels)) {
               error$1(env, {
                 TAG: /* UnknownLabel */ 4,
                 _0: name$1
@@ -14047,7 +14031,7 @@ function statement(env) {
           const match$13 = label$5[1];
           const name$2 = match$13.name;
           token$4(env, /* T_COLON */ 77);
-          if (Curry._2(mem$1, name$2, env.labels)) {
+          if (mem$1(name$2, env.labels)) {
             error_at(env, [
               loc$12,
               {
@@ -15896,253 +15880,6 @@ function parse(content, options) {
           ]);
       }
     };
-    const _type = function (param) {
-      const t = param[1];
-      const loc = param[0];
-      if (/* tag */ typeof t === "number" || typeof t === "string") {
-        switch (t) {
-          case /* Any */ 0 :
-            return node("AnyTypeAnnotation", loc, []);
-          case /* Void */ 1 :
-            return node("VoidTypeAnnotation", loc, []);
-          case /* Null */ 2 :
-            return node("NullTypeAnnotation", loc, []);
-          case /* Number */ 3 :
-            return node("NumberTypeAnnotation", loc, []);
-          case /* String */ 4 :
-            return node("StringTypeAnnotation", loc, []);
-          case /* Boolean */ 5 :
-            return node("BooleanTypeAnnotation", loc, []);
-          case /* Exists */ 6 :
-            return node("ExistsTypeAnnotation", loc, []);
-        }
-      } else {
-        switch (t.TAG) {
-          case /* Nullable */ 0 :
-            let t$1 = t._0;
-            return node("NullableTypeAnnotation", loc, [[
-                "typeAnnotation",
-                _type(t$1)
-              ]]);
-          case /* Function */ 1 :
-            return function_type([
-              loc,
-              t._0
-            ]);
-          case /* Object */ 2 :
-            return object_type([
-              loc,
-              t._0
-            ]);
-          case /* Array */ 3 :
-            let t$2 = t._0;
-            return node("ArrayTypeAnnotation", loc, [[
-                "elementType",
-                _type(t$2)
-              ]]);
-          case /* Generic */ 4 :
-            let param$1 = [
-              loc,
-              t._0
-            ];
-            const g = param$1[1];
-            const id = g.id;
-            let id$1;
-            id$1 = id.TAG === /* Unqualified */ 0 ? identifier(id._0) : generic_type_qualified_identifier(id._0);
-            return node("GenericTypeAnnotation", param$1[0], [
-              [
-                "id",
-                id$1
-              ],
-              [
-                "typeParameters",
-                option(type_parameter_instantiation, g.typeParameters)
-              ]
-            ]);
-          case /* Union */ 5 :
-            let param$2 = [
-              loc,
-              t._0
-            ];
-            return node("UnionTypeAnnotation", param$2[0], [[
-                "types",
-                array_of_list(_type, param$2[1])
-              ]]);
-          case /* Intersection */ 6 :
-            let param$3 = [
-              loc,
-              t._0
-            ];
-            return node("IntersectionTypeAnnotation", param$3[0], [[
-                "types",
-                array_of_list(_type, param$3[1])
-              ]]);
-          case /* Typeof */ 7 :
-            let param$4 = [
-              loc,
-              t._0
-            ];
-            return node("TypeofTypeAnnotation", param$4[0], [[
-                "argument",
-                _type(param$4[1])
-              ]]);
-          case /* Tuple */ 8 :
-            let param$5 = [
-              loc,
-              t._0
-            ];
-            return node("TupleTypeAnnotation", param$5[0], [[
-                "types",
-                array_of_list(_type, param$5[1])
-              ]]);
-          case /* StringLiteral */ 9 :
-            let param$6 = [
-              loc,
-              t._0
-            ];
-            const s = param$6[1];
-            return node("StringLiteralTypeAnnotation", param$6[0], [
-              [
-                "value",
-                string(s.value)
-              ],
-              [
-                "raw",
-                string(s.raw)
-              ]
-            ]);
-          case /* NumberLiteral */ 10 :
-            let param$7 = [
-              loc,
-              t._0
-            ];
-            const s$1 = param$7[1];
-            return node("NumberLiteralTypeAnnotation", param$7[0], [
-              [
-                "value",
-                number$1(s$1.value)
-              ],
-              [
-                "raw",
-                string(s$1.raw)
-              ]
-            ]);
-          case /* BooleanLiteral */ 11 :
-            let param$8 = [
-              loc,
-              t._0
-            ];
-            const s$2 = param$8[1];
-            return node("BooleanLiteralTypeAnnotation", param$8[0], [
-              [
-                "value",
-                bool(s$2.value)
-              ],
-              [
-                "raw",
-                string(s$2.raw)
-              ]
-            ]);
-        }
-      }
-    };
-    const object_type = function (param) {
-      const o = param[1];
-      return node("ObjectTypeAnnotation", param[0], [
-        [
-          "properties",
-          array_of_list(object_type_property, o.properties)
-        ],
-        [
-          "indexers",
-          array_of_list(object_type_indexer, o.indexers)
-        ],
-        [
-          "callProperties",
-          array_of_list(object_type_call_property, o.callProperties)
-        ]
-      ]);
-    };
-    const identifier = function (param) {
-      const id = param[1];
-      return node("Identifier", param[0], [
-        [
-          "name",
-          string(id.name)
-        ],
-        [
-          "typeAnnotation",
-          option(type_annotation, id.typeAnnotation)
-        ],
-        [
-          "optional",
-          bool(id.optional)
-        ]
-      ]);
-    };
-    const interface_extends = function (param) {
-      const g = param[1];
-      const id = g.id;
-      let id$1;
-      id$1 = id.TAG === /* Unqualified */ 0 ? identifier(id._0) : generic_type_qualified_identifier(id._0);
-      return node("InterfaceExtends", param[0], [
-        [
-          "id",
-          id$1
-        ],
-        [
-          "typeParameters",
-          option(type_parameter_instantiation, g.typeParameters)
-        ]
-      ]);
-    };
-    const type_parameter_declaration = function (param) {
-      return node("TypeParameterDeclaration", param[0], [[
-          "params",
-          array_of_list(type_param, param[1].params)
-        ]]);
-    };
-    const type_parameter_instantiation = function (param) {
-      return node("TypeParameterInstantiation", param[0], [[
-          "params",
-          array_of_list(_type, param[1].params)
-        ]]);
-    };
-    const generic_type_qualified_identifier = function (param) {
-      const q = param[1];
-      const id = q.qualification;
-      let qualification;
-      qualification = id.TAG === /* Unqualified */ 0 ? identifier(id._0) : generic_type_qualified_identifier(id._0);
-      return node("QualifiedTypeIdentifier", param[0], [
-        [
-          "qualification",
-          qualification
-        ],
-        [
-          "id",
-          identifier(q.id)
-        ]
-      ]);
-    };
-    const class_implements = function (param) {
-      const $$implements = param[1];
-      return node("ClassImplements", param[0], [
-        [
-          "id",
-          identifier($$implements.id)
-        ],
-        [
-          "typeParameters",
-          option(type_parameter_instantiation, $$implements.typeParameters)
-        ]
-      ]);
-    };
-    const class_body = function (param) {
-      return node("ClassBody", param[0], [[
-          "body",
-          array_of_list(class_element, param[1].body)
-        ]]);
-    };
     const expression = function (param) {
       const arr = param[1];
       const loc = param[0];
@@ -16647,55 +16384,11 @@ function parse(content, options) {
           ]);
       }
     };
-    const function_expression = function (param) {
-      const _function = param[1];
-      const b = _function.body;
-      let body;
-      body = b.TAG === /* BodyBlock */ 0 ? block(b._0) : expression(b._0);
-      return node("FunctionExpression", param[0], [
-        [
-          "id",
-          option(identifier, _function.id)
-        ],
-        [
-          "params",
-          array_of_list(pattern, _function.params)
-        ],
-        [
-          "defaults",
-          array_of_list((function (param) {
-            return option(expression, param);
-          }), _function.defaults)
-        ],
-        [
-          "rest",
-          option(identifier, _function.rest)
-        ],
-        [
-          "body",
-          body
-        ],
-        [
-          "async",
-          bool(_function.async)
-        ],
-        [
-          "generator",
-          bool(_function.generator)
-        ],
-        [
-          "expression",
-          bool(_function.expression)
-        ],
-        [
-          "returnType",
-          option(type_annotation, _function.returnType)
-        ],
-        [
-          "typeParameters",
-          option(type_parameter_declaration, _function.typeParameters)
-        ]
-      ]);
+    const jsx_identifier = function (param) {
+      return node("JSXIdentifier", param[0], [[
+          "name",
+          string(param[1].name)
+        ]]);
     };
     const literal = function (param) {
       const lit = param[1];
@@ -16767,6 +16460,246 @@ function parse(content, options) {
       }
       return node("Literal", loc, props);
     };
+    const jsx_expression_container = function (param) {
+      const expr = param[1].expression;
+      let expression$1;
+      expression$1 = expr.TAG === /* Expression */ 0 ? expression(expr._0) : node("JSXEmptyExpression", expr._0, []);
+      return node("JSXExpressionContainer", param[0], [[
+          "expression",
+          expression$1
+        ]]);
+    };
+    const comment = function (param) {
+      const c = param[1];
+      let match;
+      match = c.TAG === /* Block */ 0 ? [
+          "Block",
+          c._0
+        ] : [
+          "Line",
+          c._0
+        ];
+      return node(match[0], param[0], [[
+          "value",
+          string(match[1])
+        ]]);
+    };
+    const _type = function (param) {
+      const t = param[1];
+      const loc = param[0];
+      if (/* tag */ typeof t === "number" || typeof t === "string") {
+        switch (t) {
+          case /* Any */ 0 :
+            return node("AnyTypeAnnotation", loc, []);
+          case /* Void */ 1 :
+            return node("VoidTypeAnnotation", loc, []);
+          case /* Null */ 2 :
+            return node("NullTypeAnnotation", loc, []);
+          case /* Number */ 3 :
+            return node("NumberTypeAnnotation", loc, []);
+          case /* String */ 4 :
+            return node("StringTypeAnnotation", loc, []);
+          case /* Boolean */ 5 :
+            return node("BooleanTypeAnnotation", loc, []);
+          case /* Exists */ 6 :
+            return node("ExistsTypeAnnotation", loc, []);
+        }
+      } else {
+        switch (t.TAG) {
+          case /* Nullable */ 0 :
+            let t$1 = t._0;
+            return node("NullableTypeAnnotation", loc, [[
+                "typeAnnotation",
+                _type(t$1)
+              ]]);
+          case /* Function */ 1 :
+            return function_type([
+              loc,
+              t._0
+            ]);
+          case /* Object */ 2 :
+            return object_type([
+              loc,
+              t._0
+            ]);
+          case /* Array */ 3 :
+            let t$2 = t._0;
+            return node("ArrayTypeAnnotation", loc, [[
+                "elementType",
+                _type(t$2)
+              ]]);
+          case /* Generic */ 4 :
+            let param$1 = [
+              loc,
+              t._0
+            ];
+            const g = param$1[1];
+            const id = g.id;
+            let id$1;
+            id$1 = id.TAG === /* Unqualified */ 0 ? identifier(id._0) : generic_type_qualified_identifier(id._0);
+            return node("GenericTypeAnnotation", param$1[0], [
+              [
+                "id",
+                id$1
+              ],
+              [
+                "typeParameters",
+                option(type_parameter_instantiation, g.typeParameters)
+              ]
+            ]);
+          case /* Union */ 5 :
+            let param$2 = [
+              loc,
+              t._0
+            ];
+            return node("UnionTypeAnnotation", param$2[0], [[
+                "types",
+                array_of_list(_type, param$2[1])
+              ]]);
+          case /* Intersection */ 6 :
+            let param$3 = [
+              loc,
+              t._0
+            ];
+            return node("IntersectionTypeAnnotation", param$3[0], [[
+                "types",
+                array_of_list(_type, param$3[1])
+              ]]);
+          case /* Typeof */ 7 :
+            let param$4 = [
+              loc,
+              t._0
+            ];
+            return node("TypeofTypeAnnotation", param$4[0], [[
+                "argument",
+                _type(param$4[1])
+              ]]);
+          case /* Tuple */ 8 :
+            let param$5 = [
+              loc,
+              t._0
+            ];
+            return node("TupleTypeAnnotation", param$5[0], [[
+                "types",
+                array_of_list(_type, param$5[1])
+              ]]);
+          case /* StringLiteral */ 9 :
+            let param$6 = [
+              loc,
+              t._0
+            ];
+            const s = param$6[1];
+            return node("StringLiteralTypeAnnotation", param$6[0], [
+              [
+                "value",
+                string(s.value)
+              ],
+              [
+                "raw",
+                string(s.raw)
+              ]
+            ]);
+          case /* NumberLiteral */ 10 :
+            let param$7 = [
+              loc,
+              t._0
+            ];
+            const s$1 = param$7[1];
+            return node("NumberLiteralTypeAnnotation", param$7[0], [
+              [
+                "value",
+                number$1(s$1.value)
+              ],
+              [
+                "raw",
+                string(s$1.raw)
+              ]
+            ]);
+          case /* BooleanLiteral */ 11 :
+            let param$8 = [
+              loc,
+              t._0
+            ];
+            const s$2 = param$8[1];
+            return node("BooleanLiteralTypeAnnotation", param$8[0], [
+              [
+                "value",
+                bool(s$2.value)
+              ],
+              [
+                "raw",
+                string(s$2.raw)
+              ]
+            ]);
+        }
+      }
+    };
+    const type_annotation = function (param) {
+      return node("TypeAnnotation", param[0], [[
+          "typeAnnotation",
+          _type(param[1])
+        ]]);
+    };
+    const type_parameter_instantiation = function (param) {
+      return node("TypeParameterInstantiation", param[0], [[
+          "params",
+          array_of_list(_type, param[1].params)
+        ]]);
+    };
+    const identifier = function (param) {
+      const id = param[1];
+      return node("Identifier", param[0], [
+        [
+          "name",
+          string(id.name)
+        ],
+        [
+          "typeAnnotation",
+          option(type_annotation, id.typeAnnotation)
+        ],
+        [
+          "optional",
+          bool(id.optional)
+        ]
+      ]);
+    };
+    const generic_type_qualified_identifier = function (param) {
+      const q = param[1];
+      const id = q.qualification;
+      let qualification;
+      qualification = id.TAG === /* Unqualified */ 0 ? identifier(id._0) : generic_type_qualified_identifier(id._0);
+      return node("QualifiedTypeIdentifier", param[0], [
+        [
+          "qualification",
+          qualification
+        ],
+        [
+          "id",
+          identifier(q.id)
+        ]
+      ]);
+    };
+    const function_type = function (param) {
+      const fn = param[1];
+      return node("FunctionTypeAnnotation", param[0], [
+        [
+          "params",
+          array_of_list(function_type_param, fn.params)
+        ],
+        [
+          "returnType",
+          _type(fn.returnType)
+        ],
+        [
+          "rest",
+          option(function_type_param, fn.rest)
+        ],
+        [
+          "typeParameters",
+          option(type_parameter_declaration, fn.typeParameters)
+        ]
+      ]);
+    };
     const pattern = function (param) {
       const obj = param[1];
       const loc = param[0];
@@ -16815,52 +16748,177 @@ function parse(content, options) {
           return expression(obj._0);
       }
     };
+    const declare_variable = function (param) {
+      return node("DeclareVariable", param[0], [[
+          "id",
+          identifier(param[1].id)
+        ]]);
+    };
+    const let_assignment = function (assignment) {
+      return obj([
+        [
+          "id",
+          pattern(assignment.id)
+        ],
+        [
+          "init",
+          option(expression, assignment.init)
+        ]
+      ]);
+    };
+    const $$catch = function (param) {
+      const c = param[1];
+      return node("CatchClause", param[0], [
+        [
+          "param",
+          pattern(c.param)
+        ],
+        [
+          "guard",
+          option(expression, c.guard)
+        ],
+        [
+          "body",
+          block(c.body)
+        ]
+      ]);
+    };
+    const type_parameter_declaration = function (param) {
+      return node("TypeParameterDeclaration", param[0], [[
+          "params",
+          array_of_list(type_param, param[1].params)
+        ]]);
+    };
     const block = function (param) {
       return node("BlockStatement", param[0], [[
           "body",
           array_of_list(statement, param[1].body)
         ]]);
     };
-    const type_annotation = function (param) {
-      return node("TypeAnnotation", param[0], [[
-          "typeAnnotation",
-          _type(param[1])
+    const export_specifiers = function (param) {
+      if (param !== undefined) {
+        if (param.TAG === /* ExportSpecifiers */ 0) {
+          return array_of_list(export_specifier, param._0);
+        } else {
+          return array([node("ExportBatchSpecifier", param._0, [[
+                "name",
+                option(identifier, param._1)
+              ]])]);
+        }
+      } else {
+        return array([]);
+      }
+    };
+    const variable_declaration = function (param) {
+      const $$var = param[1];
+      const match = $$var.kind;
+      let kind;
+      switch (match) {
+        case /* Var */ 0 :
+          kind = "var";
+          break;
+        case /* Let */ 1 :
+          kind = "let";
+          break;
+        case /* Const */ 2 :
+          kind = "const";
+          break;
+      }
+      return node("VariableDeclaration", param[0], [
+        [
+          "declarations",
+          array_of_list(variable_declarator, $$var.declarations)
+        ],
+        [
+          "kind",
+          string(kind)
+        ]
+      ]);
+    };
+    const $$case = function (param) {
+      const c = param[1];
+      return node("SwitchCase", param[0], [
+        [
+          "test",
+          option(expression, c.test)
+        ],
+        [
+          "consequent",
+          array_of_list(statement, c.consequent)
+        ]
+      ]);
+    };
+    const export_kind = function (param) {
+      if (param === /* ExportType */ 0) {
+        return "type";
+      } else {
+        return "value";
+      }
+    };
+    const declare_function = function (param) {
+      return node("DeclareFunction", param[0], [[
+          "id",
+          identifier(param[1].id)
         ]]);
     };
-    const jsx_opening_attribute = function (attribute) {
-      if (attribute.TAG === /* Attribute */ 0) {
-        let param = attribute._0;
-        const attribute$1 = param[1];
-        const id = attribute$1.name;
-        let name;
-        name = id.TAG === /* Identifier */ 0 ? jsx_identifier(id._0) : jsx_namespaced_name(id._0);
-        return node("JSXAttribute", param[0], [
-          [
-            "name",
-            name
-          ],
-          [
-            "value",
-            option(jsx_attribute_value, attribute$1.value)
-          ]
-        ]);
-      } else {
-        let param$1 = attribute._0;
-        return node("JSXSpreadAttribute", param$1[0], [[
-            "argument",
-            expression(param$1[1].argument)
-          ]]);
-      }
+    const declare_class = function (param) {
+      const d = param[1];
+      return node("DeclareClass", param[0], [
+        [
+          "id",
+          identifier(d.id)
+        ],
+        [
+          "typeParameters",
+          option(type_parameter_declaration, d.typeParameters)
+        ],
+        [
+          "body",
+          object_type(d.body)
+        ],
+        [
+          "extends",
+          array_of_list(interface_extends, d.extends)
+        ]
+      ]);
     };
-    const jsx_name = function (id) {
-      switch (id.TAG) {
-        case /* Identifier */ 0 :
-          return jsx_identifier(id._0);
-        case /* NamespacedName */ 1 :
-          return jsx_namespaced_name(id._0);
-        case /* MemberExpression */ 2 :
-          return jsx_member_expression(id._0);
-      }
+    const type_alias = function (param) {
+      const alias = param[1];
+      return node("TypeAlias", param[0], [
+        [
+          "id",
+          identifier(alias.id)
+        ],
+        [
+          "typeParameters",
+          option(type_parameter_declaration, alias.typeParameters)
+        ],
+        [
+          "right",
+          _type(alias.right)
+        ]
+      ]);
+    };
+    const interface_declaration = function (param) {
+      const i = param[1];
+      return node("InterfaceDeclaration", param[0], [
+        [
+          "id",
+          identifier(i.id)
+        ],
+        [
+          "typeParameters",
+          option(type_parameter_declaration, i.typeParameters)
+        ],
+        [
+          "body",
+          object_type(i.body)
+        ],
+        [
+          "extends",
+          array_of_list(interface_extends, i.extends)
+        ]
+      ]);
     };
     const template_literal = function (param) {
       const value = param[1];
@@ -16874,29 +16932,6 @@ function parse(content, options) {
           array_of_list(expression, value.expressions)
         ]
       ]);
-    };
-    const variable_declarator = function (param) {
-      const declarator = param[1];
-      return node("VariableDeclarator", param[0], [
-        [
-          "id",
-          pattern(declarator.id)
-        ],
-        [
-          "init",
-          option(expression, declarator.init)
-        ]
-      ]);
-    };
-    const expression_or_spread = function (expr) {
-      if (expr.TAG === /* Expression */ 0) {
-        return expression(expr._0);
-      }
-      const match = expr._0;
-      return node("SpreadElement", match[0], [[
-          "argument",
-          expression(match[1].argument)
-        ]]);
     };
     const object_property = function (param) {
       if (param.TAG === /* Property */ 0) {
@@ -16970,6 +17005,66 @@ function parse(content, options) {
           expression(match$3[1].argument)
         ]]);
     };
+    const function_expression = function (param) {
+      const _function = param[1];
+      const b = _function.body;
+      let body;
+      body = b.TAG === /* BodyBlock */ 0 ? block(b._0) : expression(b._0);
+      return node("FunctionExpression", param[0], [
+        [
+          "id",
+          option(identifier, _function.id)
+        ],
+        [
+          "params",
+          array_of_list(pattern, _function.params)
+        ],
+        [
+          "defaults",
+          array_of_list((function (param) {
+            return option(expression, param);
+          }), _function.defaults)
+        ],
+        [
+          "rest",
+          option(identifier, _function.rest)
+        ],
+        [
+          "body",
+          body
+        ],
+        [
+          "async",
+          bool(_function.async)
+        ],
+        [
+          "generator",
+          bool(_function.generator)
+        ],
+        [
+          "expression",
+          bool(_function.expression)
+        ],
+        [
+          "returnType",
+          option(type_annotation, _function.returnType)
+        ],
+        [
+          "typeParameters",
+          option(type_parameter_declaration, _function.typeParameters)
+        ]
+      ]);
+    };
+    const expression_or_spread = function (expr) {
+      if (expr.TAG === /* Expression */ 0) {
+        return expression(expr._0);
+      }
+      const match = expr._0;
+      return node("SpreadElement", match[0], [[
+          "argument",
+          expression(match[1].argument)
+        ]]);
+    };
     const comprehension_block = function (param) {
       const b = param[1];
       return node("ComprehensionBlock", param[0], [
@@ -16984,18 +17079,6 @@ function parse(content, options) {
         [
           "each",
           bool(b.each)
-        ]
-      ]);
-    };
-    const let_assignment = function (assignment) {
-      return obj([
-        [
-          "id",
-          pattern(assignment.id)
-        ],
-        [
-          "init",
-          option(expression, assignment.init)
         ]
       ]);
     };
@@ -17015,6 +17098,176 @@ function parse(content, options) {
           array_of_list(jsx_child, element.children)
         ]
       ]);
+    };
+    const class_implements = function (param) {
+      const $$implements = param[1];
+      return node("ClassImplements", param[0], [
+        [
+          "id",
+          identifier($$implements.id)
+        ],
+        [
+          "typeParameters",
+          option(type_parameter_instantiation, $$implements.typeParameters)
+        ]
+      ]);
+    };
+    const class_body = function (param) {
+      return node("ClassBody", param[0], [[
+          "body",
+          array_of_list(class_element, param[1].body)
+        ]]);
+    };
+    const object_type_indexer = function (param) {
+      const indexer = param[1];
+      return node("ObjectTypeIndexer", param[0], [
+        [
+          "id",
+          identifier(indexer.id)
+        ],
+        [
+          "key",
+          _type(indexer.key)
+        ],
+        [
+          "value",
+          _type(indexer.value)
+        ],
+        [
+          "static",
+          bool(indexer.static)
+        ]
+      ]);
+    };
+    const object_type_property = function (param) {
+      const prop = param[1];
+      const lit = prop.key;
+      let key;
+      switch (lit.TAG) {
+        case /* Literal */ 0 :
+          key = literal(lit._0);
+          break;
+        case /* Identifier */ 1 :
+          key = identifier(lit._0);
+          break;
+        case /* Computed */ 2 :
+          throw new Caml_js_exceptions.MelangeError("Failure", {
+              MEL_EXN_ID: "Failure",
+              _1: "There should not be computed object type property keys"
+            });
+      }
+      return node("ObjectTypeProperty", param[0], [
+        [
+          "key",
+          key
+        ],
+        [
+          "value",
+          _type(prop.value)
+        ],
+        [
+          "optional",
+          bool(prop.optional)
+        ],
+        [
+          "static",
+          bool(prop.static)
+        ]
+      ]);
+    };
+    const object_type_call_property = function (param) {
+      const callProperty = param[1];
+      return node("ObjectTypeCallProperty", param[0], [
+        [
+          "value",
+          function_type(callProperty.value)
+        ],
+        [
+          "static",
+          bool(callProperty.static)
+        ]
+      ]);
+    };
+    const jsx_child = function (param) {
+      const element = param[1];
+      const loc = param[0];
+      switch (element.TAG) {
+        case /* Element */ 0 :
+          return jsx_element([
+            loc,
+            element._0
+          ]);
+        case /* ExpressionContainer */ 1 :
+          return jsx_expression_container([
+            loc,
+            element._0
+          ]);
+        case /* Text */ 2 :
+          let param$1 = [
+            loc,
+            element._0
+          ];
+          const text = param$1[1];
+          return node("JSXText", param$1[0], [
+            [
+              "value",
+              string(text.value)
+            ],
+            [
+              "raw",
+              string(text.raw)
+            ]
+          ]);
+      }
+    };
+    const jsx_opening = function (param) {
+      const opening = param[1];
+      return node("JSXOpeningElement", param[0], [
+        [
+          "name",
+          jsx_name(opening.name)
+        ],
+        [
+          "attributes",
+          array_of_list(jsx_opening_attribute, opening.attributes)
+        ],
+        [
+          "selfClosing",
+          bool(opening.selfClosing)
+        ]
+      ]);
+    };
+    const jsx_closing = function (param) {
+      return node("JSXClosingElement", param[0], [[
+          "name",
+          jsx_name(param[1].name)
+        ]]);
+    };
+    const jsx_member_expression = function (param) {
+      const member_expression = param[1];
+      const id = member_expression._object;
+      let _object;
+      _object = id.TAG === /* Identifier */ 0 ? jsx_identifier(id._0) : jsx_member_expression(id._0);
+      return node("JSXMemberExpression", param[0], [
+        [
+          "object",
+          _object
+        ],
+        [
+          "property",
+          jsx_identifier(member_expression.property)
+        ]
+      ]);
+    };
+    const jsx_name = function (id) {
+      switch (id.TAG) {
+        case /* Identifier */ 0 :
+          return jsx_identifier(id._0);
+        case /* NamespacedName */ 1 :
+          return jsx_namespaced_name(id._0);
+        case /* MemberExpression */ 2 :
+          return jsx_member_expression(id._0);
+      }
     };
     const class_element = function (m) {
       if (m.TAG === /* Method */ 0) {
@@ -17132,277 +17385,53 @@ function parse(content, options) {
         ]);
       }
     };
-    const jsx_member_expression = function (param) {
-      const member_expression = param[1];
-      const id = member_expression._object;
-      let _object;
-      _object = id.TAG === /* Identifier */ 0 ? jsx_identifier(id._0) : jsx_member_expression(id._0);
-      return node("JSXMemberExpression", param[0], [
-        [
-          "object",
-          _object
-        ],
-        [
-          "property",
-          jsx_identifier(member_expression.property)
-        ]
-      ]);
-    };
-    const jsx_identifier = function (param) {
-      return node("JSXIdentifier", param[0], [[
-          "name",
-          string(param[1].name)
-        ]]);
-    };
-    const jsx_namespaced_name = function (param) {
-      const namespaced_name = param[1];
-      return node("JSXNamespacedName", param[0], [
-        [
-          "namespace",
-          jsx_identifier(namespaced_name.namespace)
-        ],
+    const function_type_param = function (param) {
+      const param$1 = param[1];
+      return node("FunctionTypeParam", param[0], [
         [
           "name",
-          jsx_identifier(namespaced_name.name)
-        ]
-      ]);
-    };
-    const template_element = function (param) {
-      const element = param[1];
-      const value = obj([
-        [
-          "raw",
-          string(element.value.raw)
+          identifier(param$1.name)
         ],
         [
-          "cooked",
-          string(element.value.cooked)
-        ]
-      ]);
-      return node("TemplateElement", param[0], [
-        [
-          "value",
-          value
+          "typeAnnotation",
+          _type(param$1.typeAnnotation)
         ],
         [
-          "tail",
-          bool(element.tail)
+          "optional",
+          bool(param$1.optional)
         ]
       ]);
     };
-    const export_kind = function (param) {
-      if (param === /* ExportType */ 0) {
-        return "type";
-      } else {
-        return "value";
-      }
-    };
-    const variable_declaration = function (param) {
-      const $$var = param[1];
-      const match = $$var.kind;
-      let kind;
-      switch (match) {
-        case /* Var */ 0 :
-          kind = "var";
-          break;
-        case /* Let */ 1 :
-          kind = "let";
-          break;
-        case /* Const */ 2 :
-          kind = "const";
-          break;
-      }
-      return node("VariableDeclaration", param[0], [
+    const object_type = function (param) {
+      const o = param[1];
+      return node("ObjectTypeAnnotation", param[0], [
         [
-          "declarations",
-          array_of_list(variable_declarator, $$var.declarations)
+          "properties",
+          array_of_list(object_type_property, o.properties)
         ],
         [
-          "kind",
-          string(kind)
+          "indexers",
+          array_of_list(object_type_indexer, o.indexers)
+        ],
+        [
+          "callProperties",
+          array_of_list(object_type_call_property, o.callProperties)
         ]
       ]);
     };
-    const interface_declaration = function (param) {
-      const i = param[1];
-      return node("InterfaceDeclaration", param[0], [
+    const interface_extends = function (param) {
+      const g = param[1];
+      const id = g.id;
+      let id$1;
+      id$1 = id.TAG === /* Unqualified */ 0 ? identifier(id._0) : generic_type_qualified_identifier(id._0);
+      return node("InterfaceExtends", param[0], [
         [
           "id",
-          identifier(i.id)
+          id$1
         ],
         [
           "typeParameters",
-          option(type_parameter_declaration, i.typeParameters)
-        ],
-        [
-          "body",
-          object_type(i.body)
-        ],
-        [
-          "extends",
-          array_of_list(interface_extends, i.extends)
-        ]
-      ]);
-    };
-    const export_specifiers = function (param) {
-      if (param !== undefined) {
-        if (param.TAG === /* ExportSpecifiers */ 0) {
-          return array_of_list(export_specifier, param._0);
-        } else {
-          return array([node("ExportBatchSpecifier", param._0, [[
-                "name",
-                option(identifier, param._1)
-              ]])]);
-        }
-      } else {
-        return array([]);
-      }
-    };
-    const declare_class = function (param) {
-      const d = param[1];
-      return node("DeclareClass", param[0], [
-        [
-          "id",
-          identifier(d.id)
-        ],
-        [
-          "typeParameters",
-          option(type_parameter_declaration, d.typeParameters)
-        ],
-        [
-          "body",
-          object_type(d.body)
-        ],
-        [
-          "extends",
-          array_of_list(interface_extends, d.extends)
-        ]
-      ]);
-    };
-    const $$case = function (param) {
-      const c = param[1];
-      return node("SwitchCase", param[0], [
-        [
-          "test",
-          option(expression, c.test)
-        ],
-        [
-          "consequent",
-          array_of_list(statement, c.consequent)
-        ]
-      ]);
-    };
-    const type_alias = function (param) {
-      const alias = param[1];
-      return node("TypeAlias", param[0], [
-        [
-          "id",
-          identifier(alias.id)
-        ],
-        [
-          "typeParameters",
-          option(type_parameter_declaration, alias.typeParameters)
-        ],
-        [
-          "right",
-          _type(alias.right)
-        ]
-      ]);
-    };
-    const declare_function = function (param) {
-      return node("DeclareFunction", param[0], [[
-          "id",
-          identifier(param[1].id)
-        ]]);
-    };
-    const declare_variable = function (param) {
-      return node("DeclareVariable", param[0], [[
-          "id",
-          identifier(param[1].id)
-        ]]);
-    };
-    const $$catch = function (param) {
-      const c = param[1];
-      return node("CatchClause", param[0], [
-        [
-          "param",
-          pattern(c.param)
-        ],
-        [
-          "guard",
-          option(expression, c.guard)
-        ],
-        [
-          "body",
-          block(c.body)
-        ]
-      ]);
-    };
-    const jsx_opening = function (param) {
-      const opening = param[1];
-      return node("JSXOpeningElement", param[0], [
-        [
-          "name",
-          jsx_name(opening.name)
-        ],
-        [
-          "attributes",
-          array_of_list(jsx_opening_attribute, opening.attributes)
-        ],
-        [
-          "selfClosing",
-          bool(opening.selfClosing)
-        ]
-      ]);
-    };
-    const jsx_closing = function (param) {
-      return node("JSXClosingElement", param[0], [[
-          "name",
-          jsx_name(param[1].name)
-        ]]);
-    };
-    const jsx_child = function (param) {
-      const element = param[1];
-      const loc = param[0];
-      switch (element.TAG) {
-        case /* Element */ 0 :
-          return jsx_element([
-            loc,
-            element._0
-          ]);
-        case /* ExpressionContainer */ 1 :
-          return jsx_expression_container([
-            loc,
-            element._0
-          ]);
-        case /* Text */ 2 :
-          let param$1 = [
-            loc,
-            element._0
-          ];
-          const text = param$1[1];
-          return node("JSXText", param$1[0], [
-            [
-              "value",
-              string(text.value)
-            ],
-            [
-              "raw",
-              string(text.raw)
-            ]
-          ]);
-      }
-    };
-    const export_specifier = function (param) {
-      const specifier = param[1];
-      return node("ExportSpecifier", param[0], [
-        [
-          "id",
-          identifier(specifier.id)
-        ],
-        [
-          "name",
-          option(identifier, specifier.name)
+          option(type_parameter_instantiation, g.typeParameters)
         ]
       ]);
     };
@@ -17495,118 +17524,26 @@ function parse(content, options) {
           pattern(match[1].argument)
         ]]);
     };
-    const function_type = function (param) {
-      const fn = param[1];
-      return node("FunctionTypeAnnotation", param[0], [
+    const template_element = function (param) {
+      const element = param[1];
+      const value = obj([
         [
-          "params",
-          array_of_list(function_type_param, fn.params)
+          "raw",
+          string(element.value.raw)
         ],
         [
-          "returnType",
-          _type(fn.returnType)
-        ],
-        [
-          "rest",
-          option(function_type_param, fn.rest)
-        ],
-        [
-          "typeParameters",
-          option(type_parameter_declaration, fn.typeParameters)
+          "cooked",
+          string(element.value.cooked)
         ]
       ]);
-    };
-    const jsx_expression_container = function (param) {
-      const expr = param[1].expression;
-      let expression$1;
-      expression$1 = expr.TAG === /* Expression */ 0 ? expression(expr._0) : node("JSXEmptyExpression", expr._0, []);
-      return node("JSXExpressionContainer", param[0], [[
-          "expression",
-          expression$1
-        ]]);
-    };
-    const comment = function (param) {
-      const c = param[1];
-      let match;
-      match = c.TAG === /* Block */ 0 ? [
-          "Block",
-          c._0
-        ] : [
-          "Line",
-          c._0
-        ];
-      return node(match[0], param[0], [[
-          "value",
-          string(match[1])
-        ]]);
-    };
-    const object_type_indexer = function (param) {
-      const indexer = param[1];
-      return node("ObjectTypeIndexer", param[0], [
-        [
-          "id",
-          identifier(indexer.id)
-        ],
-        [
-          "key",
-          _type(indexer.key)
-        ],
+      return node("TemplateElement", param[0], [
         [
           "value",
-          _type(indexer.value)
+          value
         ],
         [
-          "static",
-          bool(indexer.static)
-        ]
-      ]);
-    };
-    const object_type_property = function (param) {
-      const prop = param[1];
-      const lit = prop.key;
-      let key;
-      switch (lit.TAG) {
-        case /* Literal */ 0 :
-          key = literal(lit._0);
-          break;
-        case /* Identifier */ 1 :
-          key = identifier(lit._0);
-          break;
-        case /* Computed */ 2 :
-          throw new Caml_js_exceptions.MelangeError("Failure", {
-              MEL_EXN_ID: "Failure",
-              _1: "There should not be computed object type property keys"
-            });
-      }
-      return node("ObjectTypeProperty", param[0], [
-        [
-          "key",
-          key
-        ],
-        [
-          "value",
-          _type(prop.value)
-        ],
-        [
-          "optional",
-          bool(prop.optional)
-        ],
-        [
-          "static",
-          bool(prop.static)
-        ]
-      ]);
-    };
-    const object_type_call_property = function (param) {
-      const callProperty = param[1];
-      return node("ObjectTypeCallProperty", param[0], [
-        [
-          "value",
-          function_type(callProperty.value)
-        ],
-        [
-          "static",
-          bool(callProperty.static)
+          "tail",
+          bool(element.tail)
         ]
       ]);
     };
@@ -17623,20 +17560,67 @@ function parse(content, options) {
         ]);
       }
     };
-    const function_type_param = function (param) {
-      const param$1 = param[1];
-      return node("FunctionTypeParam", param[0], [
+    const jsx_namespaced_name = function (param) {
+      const namespaced_name = param[1];
+      return node("JSXNamespacedName", param[0], [
+        [
+          "namespace",
+          jsx_identifier(namespaced_name.namespace)
+        ],
         [
           "name",
-          identifier(param$1.name)
+          jsx_identifier(namespaced_name.name)
+        ]
+      ]);
+    };
+    const jsx_opening_attribute = function (attribute) {
+      if (attribute.TAG === /* Attribute */ 0) {
+        let param = attribute._0;
+        const attribute$1 = param[1];
+        const id = attribute$1.name;
+        let name;
+        name = id.TAG === /* Identifier */ 0 ? jsx_identifier(id._0) : jsx_namespaced_name(id._0);
+        return node("JSXAttribute", param[0], [
+          [
+            "name",
+            name
+          ],
+          [
+            "value",
+            option(jsx_attribute_value, attribute$1.value)
+          ]
+        ]);
+      } else {
+        let param$1 = attribute._0;
+        return node("JSXSpreadAttribute", param$1[0], [[
+            "argument",
+            expression(param$1[1].argument)
+          ]]);
+      }
+    };
+    const export_specifier = function (param) {
+      const specifier = param[1];
+      return node("ExportSpecifier", param[0], [
+        [
+          "id",
+          identifier(specifier.id)
         ],
         [
-          "typeAnnotation",
-          _type(param$1.typeAnnotation)
+          "name",
+          option(identifier, specifier.name)
+        ]
+      ]);
+    };
+    const variable_declarator = function (param) {
+      const declarator = param[1];
+      return node("VariableDeclarator", param[0], [
+        [
+          "id",
+          pattern(declarator.id)
         ],
         [
-          "optional",
-          bool(param$1.optional)
+          "init",
+          option(expression, declarator.init)
         ]
       ]);
     };

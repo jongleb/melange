@@ -7,6 +7,9 @@ Unreleased
   that do not escape from the arguments at their call sites
 - compiler: resolve paths through submodules constrained by a signature, so
   that `M.N.f x` calls `f` directly
+- compiler: inline applications of functors from other modules to closed
+  arguments during alias simplification, so that the functions of the
+  argument are inlined too
 
 6.0.1-54 2025-11-29
 ---------------

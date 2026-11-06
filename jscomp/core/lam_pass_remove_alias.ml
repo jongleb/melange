@@ -190,6 +190,26 @@ let simplify_alias =
     | Lletrec (bindings, body) ->
         let bindings = List.map_snd bindings ~f:(simpl meta) in
         Lam.letrec bindings (simpl meta body)
+    | Lapply
+        ({
+           ap_func =
+             Llet
+               ( _,
+                 _,
+                 arg,
+                 (Lprim
+                    {
+                      primitive = Pfield (_, Fld_module _);
+                      args = [ Lglobal_module _ ];
+                      _;
+                    } as fn) );
+           _;
+         } as apply)
+      when Lam_analysis.no_side_effects arg ->
+        (* A functor application [Map.Make (X)] is translated to
+           [(let x = Map.Make in Map.Make) X]; drop the dead binding so that
+           the functor can be inlined below. *)
+        simpl meta (Lam.apply fn apply.ap_args apply.ap_info)
     (* complicated
            1. inline this function
            2. ...

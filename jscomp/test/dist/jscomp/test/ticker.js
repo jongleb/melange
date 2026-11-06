@@ -115,12 +115,6 @@ function print_all_composite(all_tickers) {
   }), all_tickers);
 }
 
-const compare = Caml_obj.caml_compare;
-
-const funarg = {
-  compare: compare
-};
-
 function height(param) {
   if (/* tag */ typeof param === "number" || typeof param === "string") {
     return 0;
@@ -235,7 +229,7 @@ function add(x, data, m) {
   const d = m.d;
   const v = m.v;
   const l = m.l;
-  const c = Curry._2(funarg.compare, x, v);
+  const c = Caml_obj.caml_compare(x, v);
   if (c === 0) {
     if (d === data) {
       return m;
@@ -274,7 +268,7 @@ function find(x, _param) {
           MEL_EXN_ID: Stdlib.Not_found
         });
     }
-    const c = Curry._2(funarg.compare, x, param.v);
+    const c = Caml_obj.caml_compare(x, param.v);
     if (c === 0) {
       return param.d;
     }
@@ -441,7 +435,7 @@ function find_opt(x, _param) {
     if (/* tag */ typeof param === "number" || typeof param === "string") {
       return;
     }
-    const c = Curry._2(funarg.compare, x, param.v);
+    const c = Caml_obj.caml_compare(x, param.v);
     if (c === 0) {
       return Caml_option.some(param.d);
     }
@@ -456,7 +450,7 @@ function mem(x, _param) {
     if (/* tag */ typeof param === "number" || typeof param === "string") {
       return false;
     }
-    const c = Curry._2(funarg.compare, x, param.v);
+    const c = Caml_obj.caml_compare(x, param.v);
     if (c === 0) {
       return true;
     }
@@ -575,7 +569,7 @@ function remove(x, m) {
   const d = m.d;
   const v = m.v;
   const l = m.l;
-  const c = Curry._2(funarg.compare, x, v);
+  const c = Caml_obj.caml_compare(x, v);
   if (c === 0) {
     return merge(l, r);
   }
@@ -615,7 +609,7 @@ function update(x, f, m) {
   const d = m.d;
   const v = m.v;
   const l = m.l;
-  const c = Curry._2(funarg.compare, x, v);
+  const c = Caml_obj.caml_compare(x, v);
   if (c === 0) {
     const data$1 = Curry._1(f, Caml_option.some(d));
     if (data$1 === undefined) {
@@ -828,7 +822,7 @@ function split$1(x, param) {
   const d = param.d;
   const v = param.v;
   const l = param.l;
-  const c = Curry._2(funarg.compare, x, v);
+  const c = Caml_obj.caml_compare(x, v);
   if (c === 0) {
     return [
       l,
@@ -999,7 +993,7 @@ function cons_enum(_m, _e) {
   };
 }
 
-function compare$1(cmp, m1, m2) {
+function compare(cmp, m1, m2) {
   let _e1 = cons_enum(m1, /* End */ 0);
   let _e2 = cons_enum(m2, /* End */ 0);
   while (true) {
@@ -1015,7 +1009,7 @@ function compare$1(cmp, m1, m2) {
     if (/* tag */ typeof e2 === "number" || typeof e2 === "string") {
       return 1;
     }
-    const c = Curry._2(funarg.compare, e1._0, e2._0);
+    const c = Caml_obj.caml_compare(e1._0, e2._0);
     if (c !== 0) {
       return c;
     }
@@ -1045,7 +1039,7 @@ function equal(cmp, m1, m2) {
     if (/* tag */ typeof e2 === "number" || typeof e2 === "string") {
       return false;
     }
-    if (Curry._2(funarg.compare, e1._0, e2._0) !== 0) {
+    if (!Caml_obj.caml_equal(e1._0, e2._0)) {
       return false;
     }
     if (!Curry._2(cmp, e1._1, e2._1)) {
@@ -1182,7 +1176,7 @@ function to_seq_from(low, m) {
       const r = m.r;
       const d = m.d;
       const v = m.v;
-      const n = Curry._2(funarg.compare, v, low);
+      const n = Caml_obj.caml_compare(v, low);
       if (n === 0) {
         return {
           TAG: /* More */ 0,
@@ -1247,7 +1241,7 @@ const Ticker_map = {
   is_empty: is_empty,
   mem: mem,
   equal: equal,
-  compare: compare$1,
+  compare: compare,
   for_all: for_all,
   exists: exists,
   to_list: bindings,
@@ -1294,7 +1288,7 @@ function compute_update_sequences(all_tickers) {
   const map = Stdlib__List.fold_left((function (map, ticker) {
     let tmp = ticker.type_;
     if (/* tag */ typeof tmp === "number" || typeof tmp === "string") {
-      return Curry._3(add, ticker.ticker_name, {
+      return add(ticker.ticker_name, {
         hd: ticker,
         tl: /* [] */ 0
       }, map);
@@ -1307,8 +1301,8 @@ function compute_update_sequences(all_tickers) {
         const type_ = ticker.type_;
         const ticker_name = ticker.ticker_name;
         if (/* tag */ typeof type_ === "number" || typeof type_ === "string") {
-          const l = Curry._2(find, ticker_name, map);
-          return Curry._3(add, ticker_name, Stdlib.$at(up, l), map);
+          const l = find(ticker_name, map);
+          return add(ticker_name, Stdlib.$at(up, l), map);
         }
         const match = type_._0;
         const map$1 = loop({
@@ -1326,7 +1320,7 @@ function compute_update_sequences(all_tickers) {
     };
     return loop(/* [] */ 0, map, ticker);
   }), /* Empty */ 0, Stdlib__List.rev(all_tickers));
-  return Curry._3(fold, (function (k, l, map) {
+  return fold((function (k, l, map) {
     const l$1 = Stdlib__List.sort_uniq((function (lhs, rhs) {
       const x = lhs.rank;
       if (/* tag */ typeof x === "number" || typeof x === "string") {
@@ -1357,12 +1351,12 @@ function compute_update_sequences(all_tickers) {
           });
       }
     }), l);
-    return Curry._3(add, k, l$1, map);
+    return add(k, l$1, map);
   }), map, map);
 }
 
 function process_quote(ticker_map, new_ticker, new_value) {
-  const update_sequence = Curry._2(find, new_ticker, ticker_map);
+  const update_sequence = find(new_ticker, ticker_map);
   Stdlib__List.iter((function (ticker) {
     const match = ticker.type_;
     if (/* tag */ typeof match === "number" || typeof match === "string") {
@@ -1603,4 +1597,4 @@ module.exports = {
   lines,
   loop,
 }
-/* Ticker_map Not a pure module */
+/* No side effect */

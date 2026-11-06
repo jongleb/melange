@@ -9,12 +9,6 @@ const Stdlib = require("melange/stdlib.js");
 const Stdlib__List = require("melange/list.js");
 const Stdlib__Seq = require("melange/seq.js");
 
-const compare = Caml.caml_int_compare;
-
-const funarg = {
-  compare: compare
-};
-
 function height(param) {
   if (/* tag */ typeof param === "number" || typeof param === "string") {
     return 0;
@@ -129,7 +123,7 @@ function add(x, data, m) {
   const d = m.d;
   const v = m.v;
   const l = m.l;
-  const c = Curry._2(funarg.compare, x, v);
+  const c = Caml.caml_int_compare(x, v);
   if (c === 0) {
     if (d === data) {
       return m;
@@ -168,7 +162,7 @@ function find(x, _param) {
           MEL_EXN_ID: Stdlib.Not_found
         });
     }
-    const c = Curry._2(funarg.compare, x, param.v);
+    const c = Caml.caml_int_compare(x, param.v);
     if (c === 0) {
       return param.d;
     }
@@ -335,7 +329,7 @@ function find_opt(x, _param) {
     if (/* tag */ typeof param === "number" || typeof param === "string") {
       return;
     }
-    const c = Curry._2(funarg.compare, x, param.v);
+    const c = Caml.caml_int_compare(x, param.v);
     if (c === 0) {
       return Caml_option.some(param.d);
     }
@@ -350,7 +344,7 @@ function mem(x, _param) {
     if (/* tag */ typeof param === "number" || typeof param === "string") {
       return false;
     }
-    const c = Curry._2(funarg.compare, x, param.v);
+    const c = Caml.caml_int_compare(x, param.v);
     if (c === 0) {
       return true;
     }
@@ -469,7 +463,7 @@ function remove(x, m) {
   const d = m.d;
   const v = m.v;
   const l = m.l;
-  const c = Curry._2(funarg.compare, x, v);
+  const c = Caml.caml_int_compare(x, v);
   if (c === 0) {
     return merge(l, r);
   }
@@ -509,7 +503,7 @@ function update(x, f, m) {
   const d = m.d;
   const v = m.v;
   const l = m.l;
-  const c = Curry._2(funarg.compare, x, v);
+  const c = Caml.caml_int_compare(x, v);
   if (c === 0) {
     const data$1 = Curry._1(f, Caml_option.some(d));
     if (data$1 === undefined) {
@@ -722,7 +716,7 @@ function split(x, param) {
   const d = param.d;
   const v = param.v;
   const l = param.l;
-  const c = Curry._2(funarg.compare, x, v);
+  const c = Caml.caml_int_compare(x, v);
   if (c === 0) {
     return [
       l,
@@ -893,7 +887,7 @@ function cons_enum(_m, _e) {
   };
 }
 
-function compare$1(cmp, m1, m2) {
+function compare(cmp, m1, m2) {
   let _e1 = cons_enum(m1, /* End */ 0);
   let _e2 = cons_enum(m2, /* End */ 0);
   while (true) {
@@ -909,7 +903,7 @@ function compare$1(cmp, m1, m2) {
     if (/* tag */ typeof e2 === "number" || typeof e2 === "string") {
       return 1;
     }
-    const c = Curry._2(funarg.compare, e1._0, e2._0);
+    const c = Caml.caml_int_compare(e1._0, e2._0);
     if (c !== 0) {
       return c;
     }
@@ -939,7 +933,7 @@ function equal(cmp, m1, m2) {
     if (/* tag */ typeof e2 === "number" || typeof e2 === "string") {
       return false;
     }
-    if (Curry._2(funarg.compare, e1._0, e2._0) !== 0) {
+    if (e1._0 !== e2._0) {
       return false;
     }
     if (!Curry._2(cmp, e1._1, e2._1)) {
@@ -1076,7 +1070,7 @@ function to_seq_from(low, m) {
       const r = m.r;
       const d = m.d;
       const v = m.v;
-      const n = Curry._2(funarg.compare, v, low);
+      const n = Caml.caml_int_compare(v, low);
       if (n === 0) {
         return {
           TAG: /* More */ 0,
@@ -1141,7 +1135,7 @@ const IntMap = {
   is_empty: is_empty,
   mem: mem,
   equal: equal,
-  compare: compare$1,
+  compare: compare,
   for_all: for_all,
   exists: exists,
   to_list: bindings,
@@ -1156,10 +1150,10 @@ const IntMap = {
 function assertion_test(param) {
   let m = /* Empty */ 0;
   for (let i = 0; i <= 1000000; ++i) {
-    m = Curry._3(add, i, i, m);
+    m = add(i, i, m);
   }
   for (let i$1 = 0; i$1 <= 1000000; ++i$1) {
-    Curry._2(find, i$1, m);
+    find(i$1, m);
   }
 }
 
@@ -1167,4 +1161,4 @@ module.exports = {
   IntMap,
   assertion_test,
 }
-/* IntMap Not a pure module */
+/* No side effect */
