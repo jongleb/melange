@@ -1,3 +1,11 @@
+Unreleased
+---------------
+
+- core: emit direct calls in more cases where function arity is known
+- core: hoist repeated `Curry.__n` calls out of loops and recursive functions
+- core: inline cross-module functor applications with closed arguments,
+  including calls to functions from argument modules
+
 6.0.1-54 2025-11-29
 ---------------
 

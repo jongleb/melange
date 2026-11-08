@@ -35,7 +35,6 @@ const called = {
 };
 
 function g(param) {
-  let v = {};
   const next = function (i, b) {
     called.contents = called.contents + 1 | 0;
     if (b) {
@@ -43,9 +42,9 @@ function g(param) {
     }
     return i + 1 | 0;
   };
-  Caml_obj.update_dummy(v, {
+  const v = {
     contents: next
-  });
+  };
   console.log(String(next(0, true)));
 }
 

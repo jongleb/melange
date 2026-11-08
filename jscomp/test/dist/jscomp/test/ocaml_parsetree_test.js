@@ -70,14 +70,6 @@ const color = {
 
 const Fatal_error = /* @__PURE__ */ Caml_exceptions.create("Ocaml_parsetree_test.Misc.Fatal_error");
 
-function fatal_error(msg) {
-  Stdlib.prerr_string(">> Fatal error: ");
-  console.error(msg);
-  throw new Caml_js_exceptions.MelangeError(Fatal_error, {
-      MEL_EXN_ID: Fatal_error
-    });
-}
-
 function create_hashtable(size, init) {
   const tbl = Stdlib__Hashtbl.create(undefined, size);
   Stdlib__List.iter((function (param) {
@@ -132,44 +124,34 @@ function ansi_of_style_l(l) {
   return "\x1b[" + (s + "m");
 }
 
-const default_styles = {
-  error: {
-    hd: /* Bold */ 0,
-    tl: {
-      hd: {
-        TAG: /* FG */ 0,
-        _0: /* Red */ 1
-      },
+const cur_styles = {
+  contents: {
+    error: {
+      hd: /* Bold */ 0,
+      tl: {
+        hd: {
+          TAG: /* FG */ 0,
+          _0: /* Red */ 1
+        },
+        tl: /* [] */ 0
+      }
+    },
+    warning: {
+      hd: /* Bold */ 0,
+      tl: {
+        hd: {
+          TAG: /* FG */ 0,
+          _0: /* Magenta */ 5
+        },
+        tl: /* [] */ 0
+      }
+    },
+    loc: {
+      hd: /* Bold */ 0,
       tl: /* [] */ 0
     }
-  },
-  warning: {
-    hd: /* Bold */ 0,
-    tl: {
-      hd: {
-        TAG: /* FG */ 0,
-        _0: /* Magenta */ 5
-      },
-      tl: /* [] */ 0
-    }
-  },
-  loc: {
-    hd: /* Bold */ 0,
-    tl: /* [] */ 0
   }
 };
-
-const cur_styles = {
-  contents: default_styles
-};
-
-function get_styles(param) {
-  return cur_styles.contents;
-}
-
-function set_styles(s) {
-  cur_styles.contents = s;
-}
 
 function style_of_tag(s) {
   if (s.MEL_EXN_ID === Stdlib__Format.String_tag) {
@@ -241,7 +223,7 @@ function set_color_tag_handling(ppf) {
     catch (raw_exn){
       const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
       if (exn.MEL_EXN_ID === Stdlib.Not_found) {
-        return Curry._1(partial_arg, param);
+        return partial_arg(param);
       }
       throw exn;
     }
@@ -261,7 +243,7 @@ function set_color_tag_handling(ppf) {
     catch (raw_exn){
       const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
       if (exn.MEL_EXN_ID === Stdlib.Not_found) {
-        return Curry._1(partial_arg$1, param);
+        return partial_arg$1(param);
       }
       throw exn;
     }
@@ -318,15 +300,6 @@ function setup(o) {
   }
   
 }
-
-const Misc_Color = {
-  ansi_of_style_l: ansi_of_style_l,
-  default_styles: default_styles,
-  get_styles: get_styles,
-  set_styles: set_styles,
-  setup: setup,
-  set_color_tag_handling: set_color_tag_handling
-};
 
 function number(param) {
   if (/* tag */ typeof param === "number" || typeof param === "string") {
@@ -787,7 +760,7 @@ function parse_opt(error, active, flags, s) {
     }
     const match$1 = get_range(i);
     for (let n = match$1[1], n_finish = Caml.caml_int_min(match$1[2], 104); n <= n_finish; ++n) {
-      Curry._1(myset, n);
+      myset(n);
     }
     loop(match$1[0]);
   };
@@ -1549,18 +1522,18 @@ function highlight_locations(ppf, locs) {
 
 function show_filename(file) {
   if (absname.contents) {
-    const s = Curry._1(Stdlib__Filename.is_relative, file) ? Stdlib__Filename.concat(Caml_sys.caml_sys_getcwd(), file) : file;
+    const s = Stdlib__Filename.is_relative(file) ? Stdlib__Filename.concat(Caml_sys.caml_sys_getcwd(), file) : file;
     const aux = function (_s) {
       while (true) {
         const s = _s;
-        const base = Curry._1(Stdlib__Filename.basename, s);
-        const dir = Curry._1(Stdlib__Filename.dirname, s);
+        const base = Stdlib__Filename.basename(s);
+        const dir = Stdlib__Filename.dirname(s);
         if (dir === s) {
           return dir;
         }
         if (base !== Stdlib__Filename.current_dir_name) {
           if (base === Stdlib__Filename.parent_dir_name) {
-            return Curry._1(Stdlib__Filename.dirname, aux(dir));
+            return Stdlib__Filename.dirname(aux(dir));
           } else {
             return Stdlib__Filename.concat(aux(dir), base);
           }
@@ -1596,7 +1569,7 @@ function get_pos_info(pos) {
 }
 
 function print_loc(ppf, loc) {
-  Curry._1(Misc_Color.setup, color.contents);
+  setup(color.contents);
   const match = get_pos_info(loc.loc_start);
   const startchar = match[2];
   const file = match[0];
@@ -1713,7 +1686,7 @@ function print_loc(ppf, loc) {
 }
 
 function print$1(ppf, loc) {
-  Curry._1(Misc_Color.setup, color.contents);
+  setup(color.contents);
   if (loc.loc_start.pos_fname === "//toplevel//" && highlight_locations(ppf, {
       hd: loc,
       tl: /* [] */ 0
@@ -1762,7 +1735,7 @@ const error_prefix = "Error";
 
 function print_error(ppf, loc) {
   print$1(ppf, loc);
-  Curry._1(Misc_Color.setup, color.contents);
+  setup(color.contents);
   Curry._1(Stdlib__Format.fprintf(ppf)({
     TAG: /* Format */ 0,
     _0: {
@@ -1799,7 +1772,7 @@ function print_error(ppf, loc) {
 
 function default_warning_printer(loc, ppf, w) {
   if (is_active(w)) {
-    Curry._1(Misc_Color.setup, color.contents);
+    setup(color.contents);
     print$1(ppf, loc);
     return Curry._3(Stdlib__Format.fprintf(ppf)({
       TAG: /* Format */ 0,
@@ -1908,9 +1881,9 @@ function errorf(locOpt, subOpt, if_highlightOpt, fmt) {
   };
   const buf = Stdlib__Buffer.create(64);
   const ppf = Stdlib__Format.formatter_of_buffer(buf);
-  Curry._1(Misc_Color.set_color_tag_handling, ppf);
+  set_color_tag_handling(ppf);
   if (before !== undefined) {
-    Curry._1(before, ppf);
+    before(ppf);
   }
   return Stdlib__Format.kfprintf((function (param) {
     Stdlib__Format.pp_print_flush(ppf, undefined);
@@ -2000,7 +1973,12 @@ function last(s) {
     case /* Ldot */ 1 :
       return s._1;
     case /* Lapply */ 2 :
-      return fatal_error("Longident.last");
+      let msg = "Longident.last";
+      Stdlib.prerr_string(">> Fatal error: ");
+      console.error(msg);
+      throw new Caml_js_exceptions.MelangeError(Fatal_error, {
+          MEL_EXN_ID: Fatal_error
+        });
   }
 }
 
@@ -2038,7 +2016,7 @@ function from_pair_suites(name, suites) {
         return Stdlib__List.iter((function (param) {
           const code = param[1];
           it(param[0], (function () {
-            let spec = Curry._1(code, undefined);
+            let spec = code();
             switch (spec.TAG) {
               case /* Eq */ 0 :
                 Assert.deepEqual(spec._0, spec._1);
@@ -2092,7 +2070,7 @@ function from_pair_suites(name, suites) {
       ]);
       return Stdlib__List.iter((function (param) {
         const name = param[0];
-        const fn = Curry._1(param[1], undefined);
+        const fn = param[1]();
         switch (fn.TAG) {
           case /* Eq */ 0 :
             console.log([
@@ -2625,17 +2603,6 @@ function mk(locOpt, attrsOpt, d) {
   };
 }
 
-function attr(d, a) {
-  return {
-    ptyp_desc: d.ptyp_desc,
-    ptyp_loc: d.ptyp_loc,
-    ptyp_attributes: Stdlib.$at(d.ptyp_attributes, {
-      hd: a,
-      tl: /* [] */ 0
-    })
-  };
-}
-
 function mk$1(locOpt, attrsOpt, d) {
   const loc = locOpt !== undefined ? locOpt : default_loc.contents;
   const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
@@ -2643,17 +2610,6 @@ function mk$1(locOpt, attrsOpt, d) {
     ppat_desc: d,
     ppat_loc: loc,
     ppat_attributes: attrs
-  };
-}
-
-function attr$1(d, a) {
-  return {
-    ppat_desc: d.ppat_desc,
-    ppat_loc: d.ppat_loc,
-    ppat_attributes: Stdlib.$at(d.ppat_attributes, {
-      hd: a,
-      tl: /* [] */ 0
-    })
   };
 }
 
@@ -2667,296 +2623,6 @@ function mk$2(locOpt, attrsOpt, d) {
   };
 }
 
-function attr$2(d, a) {
-  return {
-    pexp_desc: d.pexp_desc,
-    pexp_loc: d.pexp_loc,
-    pexp_attributes: Stdlib.$at(d.pexp_attributes, {
-      hd: a,
-      tl: /* [] */ 0
-    })
-  };
-}
-
-function ident(loc, attrs, a) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_ident */ 0,
-    _0: a
-  });
-}
-
-function constant(loc, attrs, a) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_constant */ 1,
-    _0: a
-  });
-}
-
-function let_(loc, attrs, a, b, c) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_let */ 2,
-    _0: a,
-    _1: b,
-    _2: c
-  });
-}
-
-function fun_(loc, attrs, a, b, c, d) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_fun */ 4,
-    _0: a,
-    _1: b,
-    _2: c,
-    _3: d
-  });
-}
-
-function function_(loc, attrs, a) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_function */ 3,
-    _0: a
-  });
-}
-
-function apply(loc, attrs, a, b) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_apply */ 5,
-    _0: a,
-    _1: b
-  });
-}
-
-function match_(loc, attrs, a, b) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_match */ 6,
-    _0: a,
-    _1: b
-  });
-}
-
-function try_(loc, attrs, a, b) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_try */ 7,
-    _0: a,
-    _1: b
-  });
-}
-
-function tuple(loc, attrs, a) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_tuple */ 8,
-    _0: a
-  });
-}
-
-function construct(loc, attrs, a, b) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_construct */ 9,
-    _0: a,
-    _1: b
-  });
-}
-
-function variant(loc, attrs, a, b) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_variant */ 10,
-    _0: a,
-    _1: b
-  });
-}
-
-function record(loc, attrs, a, b) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_record */ 11,
-    _0: a,
-    _1: b
-  });
-}
-
-function field(loc, attrs, a, b) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_field */ 12,
-    _0: a,
-    _1: b
-  });
-}
-
-function setfield(loc, attrs, a, b, c) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_setfield */ 13,
-    _0: a,
-    _1: b,
-    _2: c
-  });
-}
-
-function array(loc, attrs, a) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_array */ 14,
-    _0: a
-  });
-}
-
-function ifthenelse(loc, attrs, a, b, c) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_ifthenelse */ 15,
-    _0: a,
-    _1: b,
-    _2: c
-  });
-}
-
-function sequence(loc, attrs, a, b) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_sequence */ 16,
-    _0: a,
-    _1: b
-  });
-}
-
-function while_(loc, attrs, a, b) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_while */ 17,
-    _0: a,
-    _1: b
-  });
-}
-
-function for_(loc, attrs, a, b, c, d, e) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_for */ 18,
-    _0: a,
-    _1: b,
-    _2: c,
-    _3: d,
-    _4: e
-  });
-}
-
-function constraint_(loc, attrs, a, b) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_constraint */ 19,
-    _0: a,
-    _1: b
-  });
-}
-
-function coerce(loc, attrs, a, b, c) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_coerce */ 20,
-    _0: a,
-    _1: b,
-    _2: c
-  });
-}
-
-function send(loc, attrs, a, b) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_send */ 21,
-    _0: a,
-    _1: b
-  });
-}
-
-function new_(loc, attrs, a) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_new */ 22,
-    _0: a
-  });
-}
-
-function setinstvar(loc, attrs, a, b) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_setinstvar */ 23,
-    _0: a,
-    _1: b
-  });
-}
-
-function override(loc, attrs, a) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_override */ 24,
-    _0: a
-  });
-}
-
-function letmodule(loc, attrs, a, b, c) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_letmodule */ 25,
-    _0: a,
-    _1: b,
-    _2: c
-  });
-}
-
-function assert_(loc, attrs, a) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_assert */ 26,
-    _0: a
-  });
-}
-
-function lazy_(loc, attrs, a) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_lazy */ 27,
-    _0: a
-  });
-}
-
-function poly(loc, attrs, a, b) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_poly */ 28,
-    _0: a,
-    _1: b
-  });
-}
-
-function object_(loc, attrs, a) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_object */ 29,
-    _0: a
-  });
-}
-
-function newtype(loc, attrs, a, b) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_newtype */ 30,
-    _0: a,
-    _1: b
-  });
-}
-
-function pack(loc, attrs, a) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_pack */ 31,
-    _0: a
-  });
-}
-
-function open_(loc, attrs, a, b, c) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_open */ 32,
-    _0: a,
-    _1: b,
-    _2: c
-  });
-}
-
-function extension(loc, attrs, a) {
-  return mk$2(loc, attrs, {
-    TAG: /* Pexp_extension */ 33,
-    _0: a
-  });
-}
-
-function $$case(lhs, guard, rhs) {
-  return {
-    pc_lhs: lhs,
-    pc_guard: guard,
-    pc_rhs: rhs
-  };
-}
-
 function mk$3(locOpt, attrsOpt, d) {
   const loc = locOpt !== undefined ? locOpt : default_loc.contents;
   const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
@@ -2967,17 +2633,6 @@ function mk$3(locOpt, attrsOpt, d) {
   };
 }
 
-function attr$3(d, a) {
-  return {
-    pmty_desc: d.pmty_desc,
-    pmty_loc: d.pmty_loc,
-    pmty_attributes: Stdlib.$at(d.pmty_attributes, {
-      hd: a,
-      tl: /* [] */ 0
-    })
-  };
-}
-
 function alias(loc, attrs, a) {
   return mk$3(loc, attrs, {
     TAG: /* Pmty_alias */ 6,
@@ -2985,28 +2640,7 @@ function alias(loc, attrs, a) {
   });
 }
 
-function mk$4(locOpt, attrsOpt, d) {
-  const loc = locOpt !== undefined ? locOpt : default_loc.contents;
-  const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
-  return {
-    pmod_desc: d,
-    pmod_loc: loc,
-    pmod_attributes: attrs
-  };
-}
-
-function attr$4(d, a) {
-  return {
-    pmod_desc: d.pmod_desc,
-    pmod_loc: d.pmod_loc,
-    pmod_attributes: Stdlib.$at(d.pmod_attributes, {
-      hd: a,
-      tl: /* [] */ 0
-    })
-  };
-}
-
-function mk$5(locOpt, d) {
+function mk$4(locOpt, d) {
   const loc = locOpt !== undefined ? locOpt : default_loc.contents;
   return {
     psig_desc: d,
@@ -3018,14 +2652,14 @@ function text(txt) {
   return Stdlib__List.map((function (ds) {
     const a = text_attr(ds);
     const loc = ds.ds_loc;
-    return mk$5(loc, {
+    return mk$4(loc, {
       TAG: /* Psig_attribute */ 11,
       _0: a
     });
   }), txt);
 }
 
-function mk$6(locOpt, d) {
+function mk$5(locOpt, d) {
   const loc = locOpt !== undefined ? locOpt : default_loc.contents;
   return {
     pstr_desc: d,
@@ -3037,56 +2671,14 @@ function text$1(txt) {
   return Stdlib__List.map((function (ds) {
     const a = text_attr(ds);
     const loc = ds.ds_loc;
-    return mk$6(loc, {
+    return mk$5(loc, {
       TAG: /* Pstr_attribute */ 13,
       _0: a
     });
   }), txt);
 }
 
-function mk$7(locOpt, attrsOpt, d) {
-  const loc = locOpt !== undefined ? locOpt : default_loc.contents;
-  const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
-  return {
-    pcl_desc: d,
-    pcl_loc: loc,
-    pcl_attributes: attrs
-  };
-}
-
-function attr$5(d, a) {
-  return {
-    pcl_desc: d.pcl_desc,
-    pcl_loc: d.pcl_loc,
-    pcl_attributes: Stdlib.$at(d.pcl_attributes, {
-      hd: a,
-      tl: /* [] */ 0
-    })
-  };
-}
-
-function mk$8(locOpt, attrsOpt, d) {
-  const loc = locOpt !== undefined ? locOpt : default_loc.contents;
-  const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
-  return {
-    pcty_desc: d,
-    pcty_loc: loc,
-    pcty_attributes: attrs
-  };
-}
-
-function attr$6(d, a) {
-  return {
-    pcty_desc: d.pcty_desc,
-    pcty_loc: d.pcty_loc,
-    pcty_attributes: Stdlib.$at(d.pcty_attributes, {
-      hd: a,
-      tl: /* [] */ 0
-    })
-  };
-}
-
-function mk$9(locOpt, attrsOpt, docsOpt, d) {
+function mk$6(locOpt, attrsOpt, docsOpt, d) {
   const loc = locOpt !== undefined ? locOpt : default_loc.contents;
   const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
   const docs = docsOpt !== undefined ? docsOpt : empty_docs;
@@ -3097,79 +2689,18 @@ function mk$9(locOpt, attrsOpt, docsOpt, d) {
   };
 }
 
-function inherit_(loc, attrs, a) {
-  return mk$9(loc, attrs, undefined, {
-    TAG: /* Pctf_inherit */ 0,
-    _0: a
-  });
-}
-
-function val_(loc, attrs, a, b, c, d) {
-  return mk$9(loc, attrs, undefined, {
-    TAG: /* Pctf_val */ 1,
-    _0: [
-      a,
-      b,
-      c,
-      d
-    ]
-  });
-}
-
-function method_(loc, attrs, a, b, c, d) {
-  return mk$9(loc, attrs, undefined, {
-    TAG: /* Pctf_method */ 2,
-    _0: [
-      a,
-      b,
-      c,
-      d
-    ]
-  });
-}
-
-function constraint_$1(loc, attrs, a, b) {
-  return mk$9(loc, attrs, undefined, {
-    TAG: /* Pctf_constraint */ 3,
-    _0: [
-      a,
-      b
-    ]
-  });
-}
-
-function extension$1(loc, attrs, a) {
-  return mk$9(loc, attrs, undefined, {
-    TAG: /* Pctf_extension */ 5,
-    _0: a
-  });
-}
-
-function attribute(loc, a) {
-  return mk$9(loc, undefined, undefined, {
-    TAG: /* Pctf_attribute */ 4,
-    _0: a
-  });
-}
-
 function text$2(txt) {
   return Stdlib__List.map((function (ds) {
-    return attribute(ds.ds_loc, text_attr(ds));
+    let loc = ds.ds_loc;
+    let a = text_attr(ds);
+    return mk$6(loc, undefined, undefined, {
+      TAG: /* Pctf_attribute */ 4,
+      _0: a
+    });
   }), txt);
 }
 
-function attr$7(d, a) {
-  return {
-    pctf_desc: d.pctf_desc,
-    pctf_loc: d.pctf_loc,
-    pctf_attributes: Stdlib.$at(d.pctf_attributes, {
-      hd: a,
-      tl: /* [] */ 0
-    })
-  };
-}
-
-function mk$10(locOpt, attrsOpt, docsOpt, d) {
+function mk$7(locOpt, attrsOpt, docsOpt, d) {
   const loc = locOpt !== undefined ? locOpt : default_loc.contents;
   const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
   const docs = docsOpt !== undefined ? docsOpt : empty_docs;
@@ -3180,101 +2711,18 @@ function mk$10(locOpt, attrsOpt, docsOpt, d) {
   };
 }
 
-function inherit_$1(loc, attrs, a, b, c) {
-  return mk$10(loc, attrs, undefined, {
-    TAG: /* Pcf_inherit */ 0,
-    _0: a,
-    _1: b,
-    _2: c
-  });
-}
-
-function val_$1(loc, attrs, a, b, c) {
-  return mk$10(loc, attrs, undefined, {
-    TAG: /* Pcf_val */ 1,
-    _0: [
-      a,
-      b,
-      c
-    ]
-  });
-}
-
-function method_$1(loc, attrs, a, b, c) {
-  return mk$10(loc, attrs, undefined, {
-    TAG: /* Pcf_method */ 2,
-    _0: [
-      a,
-      b,
-      c
-    ]
-  });
-}
-
-function constraint_$2(loc, attrs, a, b) {
-  return mk$10(loc, attrs, undefined, {
-    TAG: /* Pcf_constraint */ 3,
-    _0: [
-      a,
-      b
-    ]
-  });
-}
-
-function initializer_(loc, attrs, a) {
-  return mk$10(loc, attrs, undefined, {
-    TAG: /* Pcf_initializer */ 4,
-    _0: a
-  });
-}
-
-function extension$2(loc, attrs, a) {
-  return mk$10(loc, attrs, undefined, {
-    TAG: /* Pcf_extension */ 6,
-    _0: a
-  });
-}
-
-function attribute$1(loc, a) {
-  return mk$10(loc, undefined, undefined, {
-    TAG: /* Pcf_attribute */ 5,
-    _0: a
-  });
-}
-
 function text$3(txt) {
   return Stdlib__List.map((function (ds) {
-    return attribute$1(ds.ds_loc, text_attr(ds));
+    let loc = ds.ds_loc;
+    let a = text_attr(ds);
+    return mk$7(loc, undefined, undefined, {
+      TAG: /* Pcf_attribute */ 5,
+      _0: a
+    });
   }), txt);
 }
 
-function virtual_(ct) {
-  return {
-    TAG: /* Cfk_virtual */ 0,
-    _0: ct
-  };
-}
-
-function concrete(o, e) {
-  return {
-    TAG: /* Cfk_concrete */ 1,
-    _0: o,
-    _1: e
-  };
-}
-
-function attr$8(d, a) {
-  return {
-    pcf_desc: d.pcf_desc,
-    pcf_loc: d.pcf_loc,
-    pcf_attributes: Stdlib.$at(d.pcf_attributes, {
-      hd: a,
-      tl: /* [] */ 0
-    })
-  };
-}
-
-function mk$11(locOpt, attrsOpt, docsOpt, primOpt, name, typ) {
+function mk$8(locOpt, attrsOpt, docsOpt, primOpt, name, typ) {
   const loc = locOpt !== undefined ? locOpt : default_loc.contents;
   const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
   const docs = docsOpt !== undefined ? docsOpt : empty_docs;
@@ -3288,7 +2736,7 @@ function mk$11(locOpt, attrsOpt, docsOpt, primOpt, name, typ) {
   };
 }
 
-function mk$12(locOpt, attrsOpt, docsOpt, textOpt, name, typ) {
+function mk$9(locOpt, attrsOpt, docsOpt, textOpt, name, typ) {
   const loc = locOpt !== undefined ? locOpt : default_loc.contents;
   const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
   const docs = docsOpt !== undefined ? docsOpt : empty_docs;
@@ -3301,20 +2749,7 @@ function mk$12(locOpt, attrsOpt, docsOpt, textOpt, name, typ) {
   };
 }
 
-function mk$13(locOpt, attrsOpt, docsOpt, textOpt, typ, name) {
-  const loc = locOpt !== undefined ? locOpt : default_loc.contents;
-  const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
-  const docs = docsOpt !== undefined ? docsOpt : empty_docs;
-  const text = textOpt !== undefined ? textOpt : /* [] */ 0;
-  return {
-    pmtd_name: name,
-    pmtd_type: typ,
-    pmtd_attributes: add_text_attrs(text, add_docs_attrs(docs, attrs)),
-    pmtd_loc: loc
-  };
-}
-
-function mk$14(locOpt, attrsOpt, docsOpt, textOpt, name, expr) {
+function mk$10(locOpt, attrsOpt, docsOpt, textOpt, name, expr) {
   const loc = locOpt !== undefined ? locOpt : default_loc.contents;
   const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
   const docs = docsOpt !== undefined ? docsOpt : empty_docs;
@@ -3327,20 +2762,7 @@ function mk$14(locOpt, attrsOpt, docsOpt, textOpt, name, expr) {
   };
 }
 
-function mk$15(locOpt, attrsOpt, docsOpt, overrideOpt, lid) {
-  const loc = locOpt !== undefined ? locOpt : default_loc.contents;
-  const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
-  const docs = docsOpt !== undefined ? docsOpt : empty_docs;
-  const override = overrideOpt !== undefined ? overrideOpt : /* Fresh */ 1;
-  return {
-    popen_lid: lid,
-    popen_override: override,
-    popen_loc: loc,
-    popen_attributes: add_docs_attrs(docs, attrs)
-  };
-}
-
-function mk$16(locOpt, attrsOpt, docsOpt, mexpr) {
+function mk$11(locOpt, attrsOpt, docsOpt, mexpr) {
   const loc = locOpt !== undefined ? locOpt : default_loc.contents;
   const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
   const docs = docsOpt !== undefined ? docsOpt : empty_docs;
@@ -3351,7 +2773,7 @@ function mk$16(locOpt, attrsOpt, docsOpt, mexpr) {
   };
 }
 
-function mk$17(locOpt, attrsOpt, docsOpt, textOpt, pat, expr) {
+function mk$12(locOpt, attrsOpt, docsOpt, textOpt, pat, expr) {
   const loc = locOpt !== undefined ? locOpt : default_loc.contents;
   const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
   const docs = docsOpt !== undefined ? docsOpt : empty_docs;
@@ -3364,7 +2786,7 @@ function mk$17(locOpt, attrsOpt, docsOpt, textOpt, pat, expr) {
   };
 }
 
-function mk$18(locOpt, attrsOpt, docsOpt, textOpt, virtOpt, paramsOpt, name, expr) {
+function mk$13(locOpt, attrsOpt, docsOpt, textOpt, virtOpt, paramsOpt, name, expr) {
   const loc = locOpt !== undefined ? locOpt : default_loc.contents;
   const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
   const docs = docsOpt !== undefined ? docsOpt : empty_docs;
@@ -3381,7 +2803,7 @@ function mk$18(locOpt, attrsOpt, docsOpt, textOpt, virtOpt, paramsOpt, name, exp
   };
 }
 
-function mk$19(locOpt, attrsOpt, docsOpt, textOpt, paramsOpt, cstrsOpt, kindOpt, privOpt, manifest, name) {
+function mk$14(locOpt, attrsOpt, docsOpt, textOpt, paramsOpt, cstrsOpt, kindOpt, privOpt, manifest, name) {
   const loc = locOpt !== undefined ? locOpt : default_loc.contents;
   const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
   const docs = docsOpt !== undefined ? docsOpt : empty_docs;
@@ -3416,7 +2838,7 @@ function constructor(locOpt, attrsOpt, infoOpt, argsOpt, res, name) {
   };
 }
 
-function field$1(locOpt, attrsOpt, infoOpt, mutOpt, name, typ) {
+function field(locOpt, attrsOpt, infoOpt, mutOpt, name, typ) {
   const loc = locOpt !== undefined ? locOpt : default_loc.contents;
   const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
   const info = infoOpt !== undefined ? Caml_option.valFromOption(infoOpt) : undefined;
@@ -3430,7 +2852,7 @@ function field$1(locOpt, attrsOpt, infoOpt, mutOpt, name, typ) {
   };
 }
 
-function mk$20(attrsOpt, docsOpt, paramsOpt, privOpt, path, constructors) {
+function mk$15(attrsOpt, docsOpt, paramsOpt, privOpt, path, constructors) {
   const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
   const docs = docsOpt !== undefined ? docsOpt : empty_docs;
   const params = paramsOpt !== undefined ? paramsOpt : /* [] */ 0;
@@ -3477,73 +2899,6 @@ function rebind(locOpt, attrsOpt, docsOpt, infoOpt, name, lid) {
     pext_attributes: add_docs_attrs(docs, add_info_attrs(info, attrs))
   };
 }
-
-const Ast_helper_Exp = {
-  mk: mk$2,
-  attr: attr$2,
-  ident: ident,
-  constant: constant,
-  let_: let_,
-  fun_: fun_,
-  function_: function_,
-  apply: apply,
-  match_: match_,
-  try_: try_,
-  tuple: tuple,
-  construct: construct,
-  variant: variant,
-  record: record,
-  field: field,
-  setfield: setfield,
-  array: array,
-  ifthenelse: ifthenelse,
-  sequence: sequence,
-  while_: while_,
-  for_: for_,
-  coerce: coerce,
-  constraint_: constraint_,
-  send: send,
-  new_: new_,
-  setinstvar: setinstvar,
-  override: override,
-  letmodule: letmodule,
-  assert_: assert_,
-  lazy_: lazy_,
-  poly: poly,
-  object_: object_,
-  newtype: newtype,
-  pack: pack,
-  open_: open_,
-  extension: extension,
-  $$case: $$case
-};
-
-const Ast_helper_Ctf = {
-  mk: mk$9,
-  attr: attr$7,
-  inherit_: inherit_,
-  val_: val_,
-  method_: method_,
-  constraint_: constraint_$1,
-  extension: extension$1,
-  attribute: attribute,
-  text: text$2
-};
-
-const Ast_helper_Cf = {
-  mk: mk$10,
-  attr: attr$8,
-  inherit_: inherit_$1,
-  val_: val_$1,
-  method_: method_$1,
-  constraint_: constraint_$2,
-  initializer_: initializer_,
-  extension: extension$2,
-  attribute: attribute$1,
-  text: text$3,
-  virtual_: virtual_,
-  concrete: concrete
-};
 
 const $$Error$1 = /* @__PURE__ */ Caml_exceptions.create("Ocaml_parsetree_test.Syntaxerr.Error");
 
@@ -3730,7 +3085,7 @@ function mkpat(d) {
 }
 
 function mkexp(d) {
-  return Curry._3(Ast_helper_Exp.mk, symbol_rloc(), undefined, d);
+  return mk$2(symbol_rloc(), undefined, d);
 }
 
 function mkmty(d) {
@@ -3738,31 +3093,55 @@ function mkmty(d) {
 }
 
 function mksig(d) {
-  return mk$5(symbol_rloc(), d);
+  return mk$4(symbol_rloc(), d);
 }
 
 function mkmod(d) {
-  return mk$4(symbol_rloc(), undefined, d);
+  let locOpt = symbol_rloc();
+  let attrsOpt;
+  const loc = locOpt !== undefined ? locOpt : default_loc.contents;
+  const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
+  return {
+    pmod_desc: d,
+    pmod_loc: loc,
+    pmod_attributes: attrs
+  };
 }
 
 function mkstr(d) {
-  return mk$6(symbol_rloc(), d);
+  return mk$5(symbol_rloc(), d);
 }
 
 function mkclass(d) {
-  return mk$7(symbol_rloc(), undefined, d);
+  let locOpt = symbol_rloc();
+  let attrsOpt;
+  const loc = locOpt !== undefined ? locOpt : default_loc.contents;
+  const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
+  return {
+    pcl_desc: d,
+    pcl_loc: loc,
+    pcl_attributes: attrs
+  };
 }
 
 function mkcty(d) {
-  return mk$8(symbol_rloc(), undefined, d);
+  let locOpt = symbol_rloc();
+  let attrsOpt;
+  const loc = locOpt !== undefined ? locOpt : default_loc.contents;
+  const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
+  return {
+    pcty_desc: d,
+    pcty_loc: loc,
+    pcty_attributes: attrs
+  };
 }
 
 function mkctf(attrs, docs, d) {
-  return Curry._4(Ast_helper_Ctf.mk, symbol_rloc(), attrs, docs, d);
+  return mk$6(symbol_rloc(), attrs, docs, d);
 }
 
 function mkcf(attrs, docs, d) {
-  return Curry._4(Ast_helper_Cf.mk, symbol_rloc(), attrs, docs, d);
+  return mk$7(symbol_rloc(), attrs, docs, d);
 }
 
 function mkoption(d) {
@@ -3812,7 +3191,7 @@ function reloc_exp(x) {
 
 function mkoperator(name, pos) {
   const loc = rhs_loc(pos);
-  return Curry._3(Ast_helper_Exp.mk, loc, undefined, {
+  return mk$2(loc, undefined, {
     TAG: /* Pexp_ident */ 0,
     _0: {
       txt: {
@@ -3835,7 +3214,7 @@ function mkpatvar(name, pos) {
 }
 
 function ghexp(d) {
-  return Curry._3(Ast_helper_Exp.mk, symbol_gloc(), undefined, d);
+  return mk$2(symbol_gloc(), undefined, d);
 }
 
 function ghpat(d) {
@@ -3875,7 +3254,7 @@ function neg_float_string(f) {
 }
 
 function mkexp_cons(consloc, args, loc) {
-  return Curry._3(Ast_helper_Exp.mk, loc, undefined, {
+  return mk$2(loc, undefined, {
     TAG: /* Pexp_construct */ 9,
     _0: {
       txt: {
@@ -3913,7 +3292,7 @@ function mktailexp(nilloc, param) {
       loc_end: loc_loc_end,
       loc_ghost: true
     };
-    const arg = Curry._3(Ast_helper_Exp.mk, loc, undefined, {
+    const arg = mk$2(loc, undefined, {
       TAG: /* Pexp_tuple */ 8,
       _0: {
         hd: e1,
@@ -3944,7 +3323,7 @@ function mktailexp(nilloc, param) {
     txt: nil_txt,
     loc: loc$1
   };
-  return Curry._3(Ast_helper_Exp.mk, loc$1, undefined, {
+  return mk$2(loc$1, undefined, {
     TAG: /* Pexp_construct */ 9,
     _0: nil,
     _1: undefined
@@ -4395,15 +3774,7 @@ function text_def(pos) {
 function extra_text(text, pos, items) {
   const pre_extras = get_pre_extra_text(Stdlib__Parsing.rhs_start_pos(pos));
   const post_extras = get_post_extra_text(Stdlib__Parsing.rhs_end_pos(pos));
-  return Stdlib.$at(Curry._1(text, pre_extras), Stdlib.$at(items, Curry._1(text, post_extras)));
-}
-
-function extra_cstr(pos, items) {
-  return extra_text(Ast_helper_Cf.text, pos, items);
-}
-
-function extra_csig(pos, items) {
-  return extra_text(Ast_helper_Ctf.text, pos, items);
+  return Stdlib.$at(text(pre_extras), Stdlib.$at(items, text(post_extras)));
 }
 
 function add_nonrec(rf, attrs, pos) {
@@ -4920,7 +4291,14 @@ const yyact = [
   (function (__caml_parser_env) {
     const _1 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return attr$4(_1, _2);
+    return {
+      pmod_desc: _1.pmod_desc,
+      pmod_loc: _1.pmod_loc,
+      pmod_attributes: Stdlib.$at(_1.pmod_attributes, {
+        hd: _2,
+        tl: /* [] */ 0
+      })
+    };
   }),
   (function (__caml_parser_env) {
     const _1 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
@@ -4993,7 +4371,7 @@ const yyact = [
           });
       }
       const bindings$1 = Stdlib__List.map((function (lb) {
-        return mk$17(lb.lb_loc, lb.lb_attributes, CamlinternalLazy.force(lb.lb_docs), CamlinternalLazy.force(lb.lb_text), lb.lb_pattern, lb.lb_expression);
+        return mk$12(lb.lb_loc, lb.lb_attributes, CamlinternalLazy.force(lb.lb_docs), CamlinternalLazy.force(lb.lb_text), lb.lb_pattern, lb.lb_expression);
       }), bindings);
       str = mkstr({
         TAG: /* Pstr_value */ 1,
@@ -5017,7 +4395,7 @@ const yyact = [
         ],
         _1: /* [] */ 0
       };
-      return mk$6(symbol_gloc(), d);
+      return mk$5(symbol_gloc(), d);
     } else {
       return str;
     }
@@ -5119,7 +4497,7 @@ const yyact = [
   (function (__caml_parser_env) {
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _3 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$16(symbol_rloc(), _3, symbol_docs(), _2);
+    return mk$11(symbol_rloc(), _3, symbol_docs(), _2);
   }),
   (function (__caml_parser_env) {
     return Stdlib__Parsing.peek_val(__caml_parser_env, 0);
@@ -5147,7 +4525,7 @@ const yyact = [
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 2);
     const _3 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _4 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$14(symbol_rloc(), _4, symbol_docs(), undefined, {
+    return mk$10(symbol_rloc(), _4, symbol_docs(), undefined, {
       txt: _2,
       loc: rhs_loc(2)
     }, _3);
@@ -5171,7 +4549,7 @@ const yyact = [
     const _3 = Stdlib__Parsing.peek_val(__caml_parser_env, 2);
     const _4 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _5 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$14(symbol_rloc(), _5, symbol_docs(), undefined, {
+    return mk$10(symbol_rloc(), _5, symbol_docs(), undefined, {
       txt: _3,
       loc: rhs_loc(3)
     }, _4);
@@ -5180,7 +4558,7 @@ const yyact = [
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 2);
     const _3 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _4 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$14(symbol_rloc(), _4, symbol_docs(), get_text(Stdlib__Parsing.symbol_start_pos()), {
+    return mk$10(symbol_rloc(), _4, symbol_docs(), get_text(Stdlib__Parsing.symbol_start_pos()), {
       txt: _2,
       loc: rhs_loc(2)
     }, _3);
@@ -5251,7 +4629,14 @@ const yyact = [
   (function (__caml_parser_env) {
     const _1 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return attr$3(_1, _2);
+    return {
+      pmty_desc: _1.pmty_desc,
+      pmty_loc: _1.pmty_loc,
+      pmty_attributes: Stdlib.$at(_1.pmty_attributes, {
+        hd: _2,
+        tl: /* [] */ 0
+      })
+    };
   }),
   (function (__caml_parser_env) {
     return /* [] */ 0;
@@ -5380,15 +4765,29 @@ const yyact = [
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 2);
     const _3 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _4 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$15(symbol_rloc(), _4, symbol_docs(), _2, {
+    let locOpt = symbol_rloc();
+    let attrsOpt = _4;
+    let docsOpt = symbol_docs();
+    let overrideOpt = _2;
+    let lid = {
       txt: _3,
       loc: rhs_loc(3)
-    });
+    };
+    const loc = locOpt !== undefined ? locOpt : default_loc.contents;
+    const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
+    const docs = docsOpt !== undefined ? docsOpt : empty_docs;
+    const override = overrideOpt !== undefined ? overrideOpt : /* Fresh */ 1;
+    return {
+      popen_lid: lid,
+      popen_override: override,
+      popen_loc: loc,
+      popen_attributes: add_docs_attrs(docs, attrs)
+    };
   }),
   (function (__caml_parser_env) {
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _3 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$16(symbol_rloc(), _3, symbol_docs(), _2);
+    return mk$11(symbol_rloc(), _3, symbol_docs(), _2);
   }),
   (function (__caml_parser_env) {
     return Stdlib__Parsing.peek_val(__caml_parser_env, 0);
@@ -5423,7 +4822,7 @@ const yyact = [
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 2);
     const _3 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _4 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$12(symbol_rloc(), _4, symbol_docs(), undefined, {
+    return mk$9(symbol_rloc(), _4, symbol_docs(), undefined, {
       txt: _2,
       loc: rhs_loc(2)
     }, _3);
@@ -5432,7 +4831,7 @@ const yyact = [
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 3);
     const _4 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _5 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$12(symbol_rloc(), _5, symbol_docs(), undefined, {
+    return mk$9(symbol_rloc(), _5, symbol_docs(), undefined, {
       txt: _2,
       loc: rhs_loc(2)
     }, alias(rhs_loc(4), undefined, {
@@ -5459,7 +4858,7 @@ const yyact = [
     const _3 = Stdlib__Parsing.peek_val(__caml_parser_env, 3);
     const _5 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _6 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$12(symbol_rloc(), _6, symbol_docs(), undefined, {
+    return mk$9(symbol_rloc(), _6, symbol_docs(), undefined, {
       txt: _3,
       loc: rhs_loc(3)
     }, _5);
@@ -5468,7 +4867,7 @@ const yyact = [
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 3);
     const _4 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _5 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$12(symbol_rloc(), _5, symbol_docs(), get_text(Stdlib__Parsing.symbol_start_pos()), {
+    return mk$9(symbol_rloc(), _5, symbol_docs(), get_text(Stdlib__Parsing.symbol_start_pos()), {
       txt: _2,
       loc: rhs_loc(2)
     }, _4);
@@ -5483,10 +4882,24 @@ const yyact = [
     const _3 = Stdlib__Parsing.peek_val(__caml_parser_env, 2);
     const _4 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _5 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$13(symbol_rloc(), _5, symbol_docs(), undefined, _4, {
+    let locOpt = symbol_rloc();
+    let attrsOpt = _5;
+    let docsOpt = symbol_docs();
+    let textOpt;
+    let name = {
       txt: _3,
       loc: rhs_loc(3)
-    });
+    };
+    const loc = locOpt !== undefined ? locOpt : default_loc.contents;
+    const attrs = attrsOpt !== undefined ? attrsOpt : /* [] */ 0;
+    const docs = docsOpt !== undefined ? docsOpt : empty_docs;
+    const text = textOpt !== undefined ? textOpt : /* [] */ 0;
+    return {
+      pmtd_name: name,
+      pmtd_type: _4,
+      pmtd_attributes: add_text_attrs(text, add_docs_attrs(docs, attrs)),
+      pmtd_loc: loc
+    };
   }),
   (function (__caml_parser_env) {
     const _1 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
@@ -5509,7 +4922,7 @@ const yyact = [
     const _4 = Stdlib__Parsing.peek_val(__caml_parser_env, 2);
     const _5 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _6 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$18(symbol_rloc(), _6, symbol_docs(), undefined, _2, _3, {
+    return mk$13(symbol_rloc(), _6, symbol_docs(), undefined, _2, _3, {
       txt: _4,
       loc: rhs_loc(4)
     }, _5);
@@ -5520,7 +4933,7 @@ const yyact = [
     const _4 = Stdlib__Parsing.peek_val(__caml_parser_env, 2);
     const _5 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _6 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$18(symbol_rloc(), _6, symbol_docs(), get_text(Stdlib__Parsing.symbol_start_pos()), _2, _3, {
+    return mk$13(symbol_rloc(), _6, symbol_docs(), get_text(Stdlib__Parsing.symbol_start_pos()), _2, _3, {
       txt: _4,
       loc: rhs_loc(4)
     }, _5);
@@ -5605,7 +5018,7 @@ const yyact = [
             }
           });
       }
-      return mk$17(lb.lb_loc, undefined, undefined, undefined, lb.lb_pattern, lb.lb_expression);
+      return mk$12(lb.lb_loc, undefined, undefined, undefined, lb.lb_pattern, lb.lb_expression);
     }), _1.lbs_bindings);
     if (_1.lbs_extension !== undefined) {
       throw new Caml_js_exceptions.MelangeError($$Error$1, {
@@ -5637,7 +5050,14 @@ const yyact = [
   (function (__caml_parser_env) {
     const _1 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return attr$5(_1, _2);
+    return {
+      pcl_desc: _1.pcl_desc,
+      pcl_loc: _1.pcl_loc,
+      pcl_attributes: Stdlib.$at(_1.pcl_attributes, {
+        hd: _2,
+        tl: /* [] */ 0
+      })
+    };
   }),
   (function (__caml_parser_env) {
     const _1 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
@@ -5706,7 +5126,7 @@ const yyact = [
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
     return {
       pcstr_self: _1,
-      pcstr_fields: extra_cstr(2, Stdlib__List.rev(_2))
+      pcstr_fields: extra_text(text$3, 2, Stdlib__List.rev(_2))
     };
   }),
   (function (__caml_parser_env) {
@@ -5732,7 +5152,7 @@ const yyact = [
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
     return Stdlib.$at({
       hd: _2,
-      tl: Curry._1(Ast_helper_Cf.text, get_text(Stdlib__Parsing.rhs_start_pos(2)))
+      tl: text$3(get_text(Stdlib__Parsing.rhs_start_pos(2)))
     }, _1);
   }),
   (function (__caml_parser_env) {
@@ -6072,7 +5492,14 @@ const yyact = [
   (function (__caml_parser_env) {
     const _1 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return attr$6(_1, _2);
+    return {
+      pcty_desc: _1.pcty_desc,
+      pcty_loc: _1.pcty_loc,
+      pcty_attributes: Stdlib.$at(_1.pcty_attributes, {
+        hd: _2,
+        tl: /* [] */ 0
+      })
+    };
   }),
   (function (__caml_parser_env) {
     const _1 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
@@ -6086,7 +5513,7 @@ const yyact = [
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
     return {
       pcsig_self: _1,
-      pcsig_fields: extra_csig(2, Stdlib__List.rev(_2))
+      pcsig_fields: extra_text(text$2, 2, Stdlib__List.rev(_2))
     };
   }),
   (function (__caml_parser_env) {
@@ -6103,7 +5530,7 @@ const yyact = [
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
     return Stdlib.$at({
       hd: _2,
-      tl: Curry._1(Ast_helper_Ctf.text, get_text(Stdlib__Parsing.rhs_start_pos(2)))
+      tl: text$2(get_text(Stdlib__Parsing.rhs_start_pos(2)))
     }, _1);
   }),
   (function (__caml_parser_env) {
@@ -6231,7 +5658,7 @@ const yyact = [
     const _4 = Stdlib__Parsing.peek_val(__caml_parser_env, 3);
     const _6 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _7 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$18(symbol_rloc(), _7, symbol_docs(), undefined, _2, _3, {
+    return mk$13(symbol_rloc(), _7, symbol_docs(), undefined, _2, _3, {
       txt: _4,
       loc: rhs_loc(4)
     }, _6);
@@ -6242,7 +5669,7 @@ const yyact = [
     const _4 = Stdlib__Parsing.peek_val(__caml_parser_env, 3);
     const _6 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _7 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$18(symbol_rloc(), _7, symbol_docs(), get_text(Stdlib__Parsing.symbol_start_pos()), _2, _3, {
+    return mk$13(symbol_rloc(), _7, symbol_docs(), get_text(Stdlib__Parsing.symbol_start_pos()), _2, _3, {
       txt: _4,
       loc: rhs_loc(4)
     }, _6);
@@ -6268,7 +5695,7 @@ const yyact = [
     const _5 = Stdlib__Parsing.peek_val(__caml_parser_env, 3);
     const _7 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _8 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$18(symbol_rloc(), _8, symbol_docs(), undefined, _3, _4, {
+    return mk$13(symbol_rloc(), _8, symbol_docs(), undefined, _3, _4, {
       txt: _5,
       loc: rhs_loc(5)
     }, _7);
@@ -6279,7 +5706,7 @@ const yyact = [
     const _4 = Stdlib__Parsing.peek_val(__caml_parser_env, 3);
     const _6 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _7 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$18(symbol_rloc(), _7, symbol_docs(), get_text(Stdlib__Parsing.symbol_start_pos()), _2, _3, {
+    return mk$13(symbol_rloc(), _7, symbol_docs(), get_text(Stdlib__Parsing.symbol_start_pos()), _2, _3, {
       txt: _4,
       loc: rhs_loc(4)
     }, _6);
@@ -6453,7 +5880,7 @@ const yyact = [
             }
           });
       }
-      return mk$17(lb.lb_loc, undefined, undefined, undefined, lb.lb_pattern, lb.lb_expression);
+      return mk$12(lb.lb_loc, undefined, undefined, undefined, lb.lb_pattern, lb.lb_expression);
     }), _1.lbs_bindings);
     const d_0 = _1.lbs_rec;
     const d_1 = Stdlib__List.rev(bindings);
@@ -7160,7 +6587,14 @@ const yyact = [
   (function (__caml_parser_env) {
     const _1 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return Curry._2(Ast_helper_Exp.attr, _1, _2);
+    return {
+      pexp_desc: _1.pexp_desc,
+      pexp_loc: _1.pexp_loc,
+      pexp_attributes: Stdlib.$at(_1.pexp_attributes, {
+        hd: _2,
+        tl: /* [] */ 0
+      })
+    };
   }),
   (function (__caml_parser_env) {
     const _1 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
@@ -7949,13 +7383,21 @@ const yyact = [
   (function (__caml_parser_env) {
     const _1 = Stdlib__Parsing.peek_val(__caml_parser_env, 2);
     const _3 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return Curry._3(Ast_helper_Exp.$$case, _1, undefined, _3);
+    return {
+      pc_lhs: _1,
+      pc_guard: undefined,
+      pc_rhs: _3
+    };
   }),
   (function (__caml_parser_env) {
     const _1 = Stdlib__Parsing.peek_val(__caml_parser_env, 4);
     const _3 = Stdlib__Parsing.peek_val(__caml_parser_env, 2);
     const _5 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return Curry._3(Ast_helper_Exp.$$case, _1, _3, _5);
+    return {
+      pc_lhs: _1,
+      pc_guard: _3,
+      pc_rhs: _5
+    };
   }),
   (function (__caml_parser_env) {
     return Stdlib__Parsing.peek_val(__caml_parser_env, 0);
@@ -8247,7 +7689,14 @@ const yyact = [
   (function (__caml_parser_env) {
     const _1 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return attr$1(_1, _2);
+    return {
+      ppat_desc: _1.ppat_desc,
+      ppat_loc: _1.ppat_loc,
+      ppat_attributes: Stdlib.$at(_1.ppat_attributes, {
+        hd: _2,
+        tl: /* [] */ 0
+      })
+    };
   }),
   (function (__caml_parser_env) {
     const _1 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
@@ -8521,7 +7970,7 @@ const yyact = [
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 3);
     const _4 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _5 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$11(symbol_rloc(), _5, symbol_docs(), undefined, {
+    return mk$8(symbol_rloc(), _5, symbol_docs(), undefined, {
       txt: _2,
       loc: rhs_loc(2)
     }, _4);
@@ -8546,7 +7995,7 @@ const yyact = [
     const _4 = Stdlib__Parsing.peek_val(__caml_parser_env, 3);
     const _6 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _7 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$11(symbol_rloc(), _7, symbol_docs(), _6, {
+    return mk$8(symbol_rloc(), _7, symbol_docs(), _6, {
       txt: _2,
       loc: rhs_loc(2)
     }, _4);
@@ -8573,7 +8022,7 @@ const yyact = [
     const _5 = Stdlib__Parsing.peek_val(__caml_parser_env, 2);
     const _6 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _7 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$19(symbol_rloc(), add_nonrec(_2, _7, 2), symbol_docs(), undefined, _3, Stdlib__List.rev(_6), _5[0], _5[1], _5[2], {
+    return mk$14(symbol_rloc(), add_nonrec(_2, _7, 2), symbol_docs(), undefined, _3, Stdlib__List.rev(_6), _5[0], _5[1], _5[2], {
       txt: _4,
       loc: rhs_loc(4)
     });
@@ -8584,7 +8033,7 @@ const yyact = [
     const _4 = Stdlib__Parsing.peek_val(__caml_parser_env, 2);
     const _5 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _6 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return mk$19(symbol_rloc(), _6, symbol_docs(), get_text(Stdlib__Parsing.symbol_start_pos()), _2, Stdlib__List.rev(_5), _4[0], _4[1], _4[2], {
+    return mk$14(symbol_rloc(), _6, symbol_docs(), get_text(Stdlib__Parsing.symbol_start_pos()), _2, Stdlib__List.rev(_5), _4[0], _4[1], _4[2], {
       txt: _3,
       loc: rhs_loc(3)
     });
@@ -8917,7 +8366,7 @@ const yyact = [
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 3);
     const _4 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _5 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return field$1(symbol_rloc(), _5, Caml_option.some(get_info(Stdlib__Parsing.symbol_end_pos())), _1, {
+    return field(symbol_rloc(), _5, Caml_option.some(get_info(Stdlib__Parsing.symbol_end_pos())), _1, {
       txt: _2,
       loc: rhs_loc(2)
     }, _4);
@@ -8930,7 +8379,7 @@ const yyact = [
     const _7 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
     const info_before_semi = get_info(Stdlib__Parsing.rhs_end_pos(5));
     const info = info_before_semi !== undefined ? info_before_semi : get_info(Stdlib__Parsing.symbol_end_pos());
-    return field$1(symbol_rloc(), Stdlib.$at(_5, _7), Caml_option.some(info), _1, {
+    return field(symbol_rloc(), Stdlib.$at(_5, _7), Caml_option.some(info), _1, {
       txt: _2,
       loc: rhs_loc(2)
     }, _4);
@@ -8945,7 +8394,7 @@ const yyact = [
     if (_2 !== /* Recursive */ 1) {
       not_expecting(2, "nonrec flag");
     }
-    return mk$20(_8, symbol_docs(), _3, _6, {
+    return mk$15(_8, symbol_docs(), _3, _6, {
       txt: _4,
       loc: rhs_loc(4)
     }, Stdlib__List.rev(_7));
@@ -8960,7 +8409,7 @@ const yyact = [
     if (_2 !== /* Recursive */ 1) {
       not_expecting(2, "nonrec flag");
     }
-    return mk$20(_8, symbol_docs(), _3, _6, {
+    return mk$15(_8, symbol_docs(), _3, _6, {
       txt: _4,
       loc: rhs_loc(4)
     }, Stdlib__List.rev(_7));
@@ -9101,7 +8550,7 @@ const yyact = [
         txt: _3,
         loc: rhs_loc(3)
       },
-      _1: mk$19(symbol_rloc(), undefined, undefined, undefined, _2, Stdlib__List.rev(_6), undefined, _4, _5, {
+      _1: mk$14(symbol_rloc(), undefined, undefined, undefined, _2, Stdlib__List.rev(_6), undefined, _4, _5, {
         txt: rhs,
         loc: rhs_loc(3)
       })
@@ -9113,7 +8562,7 @@ const yyact = [
     const _5 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
     return {
       TAG: /* Pwith_typesubst */ 2,
-      _0: mk$19(symbol_rloc(), undefined, undefined, undefined, _2, undefined, undefined, undefined, _5, {
+      _0: mk$14(symbol_rloc(), undefined, undefined, undefined, _2, undefined, undefined, undefined, _5, {
         txt: _3,
         loc: rhs_loc(3)
       })
@@ -9200,7 +8649,14 @@ const yyact = [
   (function (__caml_parser_env) {
     const _1 = Stdlib__Parsing.peek_val(__caml_parser_env, 1);
     const _2 = Stdlib__Parsing.peek_val(__caml_parser_env, 0);
-    return attr(_1, _2);
+    return {
+      ptyp_desc: _1.ptyp_desc,
+      ptyp_loc: _1.ptyp_loc,
+      ptyp_attributes: Stdlib.$at(_1.ptyp_attributes, {
+        hd: _2,
+        tl: /* [] */ 0
+      })
+    };
   }),
   (function (__caml_parser_env) {
     return Stdlib__Parsing.peek_val(__caml_parser_env, 0);
@@ -10953,7 +10409,7 @@ function directive_parse(token_with_comments, lexbuf) {
     }
     let _param;
     while (true) {
-      const t = Curry._1(token_with_comments, lexbuf);
+      const t = token_with_comments(lexbuf);
       if (/* tag */ typeof t === "number" || typeof t === "string") {
         switch (t) {
           case /* EOF */ 25 :
@@ -11004,11 +10460,11 @@ function directive_parse(token_with_comments, lexbuf) {
           exit = 1;
           break;
         default:
-          return Curry._1(no, op);
+          return no(op);
       }
     } else {
       if (op.TAG !== /* INFIXOP0 */ 2) {
-        return Curry._1(no, op);
+        return no(op);
       }
       switch (op._0) {
         case "=~" :
@@ -11173,7 +10629,7 @@ function directive_parse(token_with_comments, lexbuf) {
           exit = 1;
           break;
         default:
-          return Curry._1(no, op);
+          return no(op);
       }
     }
     if (exit === 1) {
@@ -11863,7 +11319,7 @@ function with_comment_buffer(comment, lexbuf) {
     tl: /* [] */ 0
   };
   reset_string_buffer();
-  const end_loc = Curry._1(comment, lexbuf);
+  const end_loc = comment(lexbuf);
   const s = get_stored_string();
   reset_string_buffer();
   const loc_loc_start = start_loc.loc_start;
@@ -12761,7 +12217,7 @@ function token(lexbuf) {
             _2: curr(lexbuf)
           });
       default:
-        Curry._1(lexbuf.refill_buff, lexbuf);
+        lexbuf.refill_buff(lexbuf);
         ___ocaml_lex_state = __ocaml_lex_state$1;
         continue;
     }
@@ -12799,7 +12255,7 @@ function __ocaml_lex_quoted_string_rec(delim, lexbuf, ___ocaml_lex_state) {
         ___ocaml_lex_state = 183;
         continue;
       default:
-        Curry._1(lexbuf.refill_buff, lexbuf);
+        lexbuf.refill_buff(lexbuf);
         ___ocaml_lex_state = __ocaml_lex_state$1;
         continue;
     }
@@ -12981,7 +12437,7 @@ function __ocaml_lex_comment_rec(lexbuf, ___ocaml_lex_state) {
         ___ocaml_lex_state = 132;
         continue;
       default:
-        Curry._1(lexbuf.refill_buff, lexbuf);
+        lexbuf.refill_buff(lexbuf);
         ___ocaml_lex_state = __ocaml_lex_state$1;
         continue;
     }
@@ -13041,7 +12497,7 @@ function string(lexbuf) {
         store_string_char(Stdlib__Lexing.lexeme_char(lexbuf, 0));
         return string(lexbuf);
       default:
-        Curry._1(lexbuf.refill_buff, lexbuf);
+        lexbuf.refill_buff(lexbuf);
         ___ocaml_lex_state = __ocaml_lex_state$1;
         continue;
     }
@@ -13138,7 +12594,7 @@ function token$1(lexbuf) {
                       case /* Dir_if_true */ 0 :
                       case /* Dir_if_false */ 1 :
                         if_then_else.contents = /* Dir_out */ 2;
-                        return Curry._1(cont, lexbuf);
+                        return cont(lexbuf);
                       case /* Dir_out */ 2 :
                         throw new Caml_js_exceptions.MelangeError($$Error$2, {
                             MEL_EXN_ID: $$Error$2,
@@ -13158,7 +12614,7 @@ function token$1(lexbuf) {
                       case /* Dir_out */ 2 :
                         if (directive_parse(token_with_comments, lexbuf)) {
                           if_then_else.contents = /* Dir_if_true */ 0;
-                          return Curry._1(cont, lexbuf);
+                          return cont(lexbuf);
                         } else {
                           let _param;
                           while (true) {
@@ -13176,10 +12632,10 @@ function token$1(lexbuf) {
                                 switch (token$1) {
                                   case /* ELSE */ 23 :
                                     if_then_else.contents = /* Dir_if_false */ 1;
-                                    return Curry._1(cont, lexbuf);
+                                    return cont(lexbuf);
                                   case /* END */ 24 :
                                     if_then_else.contents = /* Dir_out */ 2;
-                                    return Curry._1(cont, lexbuf);
+                                    return cont(lexbuf);
                                   case /* IF */ 37 :
                                     throw new Caml_js_exceptions.MelangeError($$Error$2, {
                                         MEL_EXN_ID: $$Error$2,
@@ -13190,7 +12646,7 @@ function token$1(lexbuf) {
                               }
                               if (is_elif(token$1) && directive_parse(token_with_comments, lexbuf)) {
                                 if_then_else.contents = /* Dir_if_true */ 0;
-                                return Curry._1(cont, lexbuf);
+                                return cont(lexbuf);
                               }
                               _param = undefined;
                               continue;
@@ -13201,14 +12657,14 @@ function token$1(lexbuf) {
                         }
                     }
                   default:
-                    return Curry._1(look_ahead, match);
+                    return look_ahead(match);
                 }
               } else {
                 if (match.TAG !== /* LIDENT */ 11) {
-                  return Curry._1(look_ahead, match);
+                  return look_ahead(match);
                 }
                 if (match._0 !== "elif") {
-                  return Curry._1(look_ahead, match);
+                  return look_ahead(match);
                 }
                 switch (if_then_else$1) {
                   case /* Dir_if_true */ 0 :
@@ -13251,7 +12707,7 @@ function token$1(lexbuf) {
                             continue;
                           case /* END */ 24 :
                             if_then_else.contents = /* Dir_out */ 2;
-                            return Curry._1(cont, lexbuf);
+                            return cont(lexbuf);
                           case /* IF */ 37 :
                             throw new Caml_js_exceptions.MelangeError($$Error$2, {
                                 MEL_EXN_ID: $$Error$2,
@@ -13273,7 +12729,7 @@ function token$1(lexbuf) {
                   };
                 case /* Dir_if_false */ 1 :
                 case /* Dir_out */ 2 :
-                  return Curry._1(look_ahead, match);
+                  return look_ahead(match);
               }
             }
             break;
@@ -13420,7 +12876,7 @@ function init$1(param) {
   comment_list.contents = /* [] */ 0;
   const match = preprocessor.contents;
   if (match !== undefined) {
-    return Curry._1(match[0], undefined);
+    return match[0]();
   }
   
 }
@@ -13478,7 +12934,7 @@ function wrap(parsing_fun, lexbuf) {
   try {
     init();
     init$1();
-    const ast = Curry._2(parsing_fun, token$1, lexbuf);
+    const ast = parsing_fun(token$1, lexbuf);
     Stdlib__Parsing.clear_parser();
     warn_bad_docstrings();
     return ast;

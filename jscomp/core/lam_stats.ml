@@ -91,3 +91,24 @@ let make ~export_idents ~export_ident_sets : t =
     exports = export_idents;
     export_idents = export_ident_sets;
   }
+
+let rec block_elements (meta : t) (lam : Lam.t) =
+  match lam with
+  | Lvar v -> (
+      match Ident.Hashtbl.find_opt meta.ident_tbl v with
+      | Some (ImmutableBlock elements) -> Some elements
+      | Some _ | None -> None)
+  | Lprim { primitive = Pfield (i, _); args = [ parent ]; _ } ->
+      Option.bind (block_element meta parent i) ~f:(elements_of_element meta)
+  | _ -> None
+
+and block_element meta parent i : Lam_id_kind.Element.t option =
+  match block_elements meta parent with
+  | Some elements when 0 <= i && i < Array.length elements -> Some elements.(i)
+  | Some _ | None -> None
+
+and elements_of_element meta (element : Lam_id_kind.Element.t) =
+  match element with
+  | Block elements -> Some elements
+  | SimpleForm lam -> block_elements meta lam
+  | NA | Arity _ -> None

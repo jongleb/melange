@@ -39,7 +39,7 @@ end
 
 (** [field_flatten_get cb v i tbl]
     try to remove the indirection of [v.(i)] by inlining when [v]
-    is a known block,
+    is a known block, passing the known element to [element],
     if not, it will call [cb ()].
 
     Note due to different control flow, a constant block
@@ -53,7 +53,7 @@ end
       | A x -> x  (* only access field [0]*)
       | B (x,y) -> x + y (* Here it will try to access field [1] *)
     }} *)
-let field_flatten_get (tbl : Lam_id_kind.t Ident.Hashtbl.t) ~f v i
+let field_flatten_get (tbl : Lam_id_kind.t Ident.Hashtbl.t) ~f ~element v i
     ~(info : Lambda.field_dbg_info) : Lam.t =
   match Ident.Hashtbl.find tbl v with
   | Module g ->
@@ -62,7 +62,9 @@ let field_flatten_get (tbl : Lam_id_kind.t Ident.Hashtbl.t) ~f v i
         ~args:[ Lam.global_module ~dynamic_import:false g ]
         ~loc:Location.none
   | ImmutableBlock arr -> (
-      match arr.(i) with NA -> f () | SimpleForm l -> l | exception _ -> f ())
+      match arr.(i) with
+      | SimpleForm l -> element l
+      | NA | Block _ | Arity _ | (exception Invalid_argument _) -> f ())
   | Constant (Const_block (_, _, ls)) -> (
       match List.nth ls i with exception Failure _ -> f () | x -> Lam.const x)
   | _ | (exception Not_found) -> f ()
@@ -91,7 +93,7 @@ let simplify_alias =
     | Constant (Const_int { i = _; _ }) -> Eval_true
     | Constant (Const_js_false | Const_js_null | Const_js_undefined _) ->
         Eval_false
-    | Constant _ | Module _ | FunctionId _ | Exception | Parameter | NA
+    | Constant _ | Module _ | FunctionId _ | Exception | Parameter _ | NA
     | OptionalBlock (_, (Undefined | Null | Null_undefined))
     | (exception Not_found) ->
         Eval_unknown
@@ -103,12 +105,16 @@ let simplify_alias =
       -> (
         (* ATTENTION:
            Main use case, we should detect inline all immutable block .. *)
-        match simpl meta arg with
-        | (Lvar v | Lmutvar v) as l ->
-            field_flatten_get meta.ident_tbl ~info
-              ~f:(fun () -> Lam.prim ~primitive ~args:[ l ] ~loc)
-              v i
-        | l -> Lam.prim ~primitive ~args:[ l ] ~loc)
+        let l = simpl meta arg in
+        let normal () = Lam.prim ~primitive ~args:[ l ] ~loc in
+        match l with
+        | Lvar v | Lmutvar v ->
+            field_flatten_get meta.ident_tbl ~info ~f:normal
+              ~element:(simpl meta) v i
+        | _ -> (
+            match Lam_stats.block_element meta l i with
+            | Some (SimpleForm field) -> simpl meta field
+            | Some (NA | Block _ | Arity _) | None -> normal ()))
     | Lprim { primitive = Popaque; _ } -> lam
     | Lprim
         {
@@ -168,6 +174,24 @@ let simplify_alias =
     | Lletrec (bindings, body) ->
         let bindings = List.map_snd bindings ~f:(simpl meta) in
         Lam.letrec bindings (simpl meta body)
+    | Lapply
+        {
+          ap_func =
+            Llet
+              ( _,
+                _,
+                arg,
+                (Lprim
+                   {
+                     primitive = Pfield (_, Fld_module _);
+                     args = [ Lglobal_module _ ];
+                     _;
+                   } as fn) );
+          ap_args;
+          ap_info;
+        }
+      when Lam_analysis.no_side_effects arg ->
+        simpl meta (Lam.apply fn ap_args ap_info)
     (* complicated
            1. inline this function
            2. ...
@@ -203,8 +227,12 @@ let simplify_alias =
                       match arg with
                       | Lvar p | Lmutvar p -> (
                           match Ident.Hashtbl.find meta.ident_tbl p with
-                          | v -> v <> Parameter
-                          | exception Not_found -> true)
+                          | Parameter _ -> false
+                          | Normal_optional _ | OptionalBlock _
+                          | ImmutableBlock _ | MutableBlock _ | Constant _
+                          | Module _ | FunctionId _ | Exception | NA
+                          | (exception Not_found) ->
+                              true)
                       | _ -> true)
                     args ->
             simpl meta

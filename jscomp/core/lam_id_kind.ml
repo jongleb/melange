@@ -34,9 +34,9 @@ type rec_flag = Lam_rec | Lam_non_rec | Lam_self_rec
 *)
 
 module Element = struct
-  type t = NA | SimpleForm of Lam.t
+  type t = NA | SimpleForm of Lam.t | Block of t array | Arity of Lam_arity.t
 
-  let of_lambda = function
+  let rec of_lambda = function
     | ( Lam.Lvar _ | Lconst _
       | Lprim
           {
@@ -45,6 +45,8 @@ module Element = struct
             _;
           } ) as lam ->
         SimpleForm lam
+    | Lprim { primitive = Pmakeblock (_, _, Immutable); args; _ } ->
+        Block (Array.of_list_map args ~f:of_lambda)
     (* | Lfunction _  *)
     | _ -> NA
 end
@@ -66,7 +68,7 @@ type t =
       lambda : (Lam.t * rec_flag) option;
     }
   | Exception
-  | Parameter
+  | Parameter of Lam_arity.t
       (** For this case, it can help us determine whether it should be inlined or not *)
   | NA
       (** Not such information is associated with an identifier, it is immutable,
@@ -107,5 +109,5 @@ let print =
     | Module id -> pp fmt "%s/%d" (Ident.name id) (Ident.stamp id)
     | FunctionId _ -> pp fmt "FunctionID"
     | Exception -> pp fmt "Exception"
-    | Parameter -> pp fmt "Parameter"
+    | Parameter _ -> pp fmt "Parameter"
     | NA -> pp fmt "NA"

@@ -25,3 +25,5 @@
 (** Utilities for lambda analysis *)
 
 val get_arity : Lam_stats.t -> Lam.t -> Lam_arity.t
+val all_lambdas : Lam_stats.t -> Lam.t list -> Lam_arity.t
+val arity_of_element : Lam_stats.t -> Lam_id_kind.Element.t -> Lam_arity.t

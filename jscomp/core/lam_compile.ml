@@ -204,11 +204,9 @@ and compile_external_field_apply ~dynamic_import (appinfo : Lam.apply)
         | (App_infer_full | App_uncurry) as ap_status ->
             E.call ~info:(call_info_of_apply_status ap_status) fn args
         | App_na -> (
-            match arity with
-            | Submodule _ | Single Arity_na ->
-                E.call ~info:Js_call_info.dummy fn args
-            | Single x ->
-                apply_with_arity fn ~arity:(Lam_arity.extract_arity x) args)
+            match Js_cmj_format.call_arity arity with
+            | Arity_na -> E.call ~info:Js_call_info.dummy fn args
+            | Arity_info (arity, _) -> apply_with_arity fn ~arity args)
       in
       Js_output.output_of_block_and_expression lambda_cxt.continuation args_code
         expression
@@ -222,17 +220,14 @@ and compile_external_field_apply ~dynamic_import (appinfo : Lam.apply)
 
 *)
 and compile_recursive_let :
-    all_bindings:(Ident.t * Lam.t) list ->
+    group_ids:Ident.Set.t ->
+    non_function_ids:Ident.Set.t ->
     Lam_compile_context.t ->
     Ident.t ->
     Lam.t ->
     Js_output.t * initialization =
-  let args_either_function_or_const (args : Lam.t list) =
-    List.for_all args ~f:(function
-      | Lam.Lfunction _ | Lconst _ -> true
-      | _ -> false)
-  in
-  fun ~all_bindings
+  fun ~group_ids
+    ~non_function_ids
     (cxt : Lam_compile_context.t)
     (id : Ident.t)
     (arg : Lam.t)
@@ -299,7 +294,11 @@ and compile_recursive_let :
             ~no_effects:(lazy (Lam_analysis.no_side_effects arg)),
           [] )
     | Lprim { primitive = Pmakeblock (_, _, _); args; _ }
-      when args_either_function_or_const args ->
+      when
+        List.for_all args ~f:(function
+          | Lam.Lfunction _ | Lconst _ -> true
+          | Lvar v -> not (Ident.Set.mem v non_function_ids)
+          | _ -> false) ->
         (compile_lambda { cxt with continuation = Declare (Alias, id) } arg, [])
         (* case of lazy blocks, treat it as usual *)
     | Lprim
@@ -318,11 +317,7 @@ and compile_recursive_let :
              ~f:(fun (x : Lam.t) ->
                match x with
                | Lvar pid ->
-                   Ident.same pid id
-                   || not
-                      @@ List.exists
-                           ~f:(fun (other, _) -> Ident.same other pid)
-                           all_bindings
+                   Ident.same pid id || not (Ident.Set.mem pid group_ids)
                | Lconst _ -> true
                | _ -> false)
              ls ->
@@ -406,10 +401,18 @@ and compile_recursive_lets_aux cxt (id_args : Lam_scc.bindings) : Js_output.t =
   (* #1716 *)
   let output_code, ids =
     let id_args = Nonempty_list.to_list id_args in
+    (* [Lam_scc.scc_bindings] puts functions first: only they are defined
+       when a block of the group is built *)
+    let group_ids = Ident.Set.of_list (List.map id_args ~f:fst) in
+    let non_function_ids =
+      Ident.Set.of_list
+        (List.filter_map id_args ~f:(fun (id, (arg : Lam.t)) ->
+             match arg with Lfunction _ -> None | _ -> Some id))
+    in
     List.fold_right id_args ~init:(Js_output.dummy, [])
       ~f:(fun (ident, arg) (acc, ids) ->
         let code, declare_ids =
-          compile_recursive_let ~all_bindings:id_args cxt ident arg
+          compile_recursive_let ~group_ids ~non_function_ids cxt ident arg
         in
         (Js_output.append_output code acc, List.append declare_ids ids))
   in

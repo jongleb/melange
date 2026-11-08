@@ -32,7 +32,9 @@ type rec_flag =
 (* not inlining in this case *)
 
 module Element : sig
-  type t = NA | SimpleForm of Lam.t
+  type t = NA | SimpleForm of Lam.t | Block of t array | Arity of Lam_arity.t
+
+  val of_lambda : Lam.t -> t
 end
 
 type boxed_nullable = Undefined | Null | Null_undefined
@@ -61,7 +63,7 @@ type t =
       lambda : (Lam.t * rec_flag) option;
     }
   | Exception
-  | Parameter
+  | Parameter of Lam_arity.t
       (** For this case, it can help us determine whether it should be inlined or not *)
   | NA
       (** Not such information is associated with an identifier, it is immutable,

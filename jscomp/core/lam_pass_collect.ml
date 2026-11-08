@@ -24,42 +24,64 @@
 
 open Import
 
-(* Check, it is shared across ident_tbl,
-    Only [Lassign] will break such invariant,
-    how about guarantee that [Lassign] only check the local ref
-    and we track which ids are [Lassign]ed
-*)
-(*
-   might not be the same due to refinement
-   assert (old.arity = v)
-*)
-let annotate (meta : Lam_stats.t) rec_flag (k : Ident.t) (arity : Lam_arity.t)
-    lambda =
-  Ident.Hashtbl.add meta.ident_tbl ~key:k
-    ~data:(FunctionId { arity; lambda = Some (lambda, rec_flag) })
-
-(* see #3609
-   we have to update since bounded function lambda
-   may contain staled unbounded varaibles
-*)
-(* match Ident.Hashtbl.find  meta.ident_tbl k  with
-   | exception Not_found -> (* FIXME: need do a sanity check of arity is NA or Determin(_,[],_) *)
-
-   | (FunctionId old)  ->
-     Ident.Hashtbl.add meta.ident_tbl k
-       (FunctionId {arity; lambda = Some (lambda, rec_flag) })
-     (* old.arity <- arity   *)
-     (* due to we keep refining arity analysis after each round*)
-   | _ -> assert false *)
-(* TODO -- avoid exception *)
-
-(* it only make senses recording arities for
-    function definition,
-    alias propgation - and toplevel identifiers, this needs to be exported
-*)
 let collect_info =
-  let rec collect_bind (meta : Lam_stats.t) rec_flag (ident : Ident.t)
-      (lam : Lam.t) =
+  let annotate (meta : Lam_stats.t) (k : Ident.t) (arity : Lam_arity.t) lambda =
+    Ident.Hashtbl.replace meta.ident_tbl ~key:k
+      ~data:(FunctionId { arity; lambda })
+  in
+  let add_parameters (meta : Lam_stats.t) params =
+    List.iter params ~f:(fun p ->
+        Ident.Hashtbl.replace meta.ident_tbl ~key:p
+          ~data:(Parameter Lam_arity.na))
+  in
+  let functor_result (lam : Lam.t) =
+    match lam with
+    | Lapply
+        {
+          ap_func =
+            Lprim
+              {
+                primitive = Pfield (_, Fld_module { name });
+                args = [ Lglobal_module { id; dynamic_import } ];
+                _;
+              };
+          ap_args;
+          _;
+        } -> (
+        match
+          Lam_compile_env.query_external_id_info ~dynamic_import id name
+        with
+        | Some { arity = Functor { arity = Arity_info ([ n ], _); result }; _ }
+          when List.length ap_args = n ->
+            Some
+              (Array.map result ~f:(fun arity ->
+                   Lam_id_kind.Element.Arity arity))
+        | Some { arity = Single _ | Submodule _ | Functor _; _ } | None -> None)
+    | _ -> None
+  in
+  let rec field_of_shape (meta : Lam_stats.t) (shape : Lam.Constant.t)
+      (element : Lam_id_kind.Element.t) : Lam_id_kind.Element.t =
+    match (shape, element) with
+    | ( Const_int { comment = Pt_recursive_module_shape Function; _ },
+        ((Arity _ | SimpleForm _) as element) ) ->
+        Arity (Lam_arity_analysis.arity_of_element meta element)
+    | ( Const_block
+          (_, Blk_constructor _, [ Const_block (_, Blk_array, components) ]),
+        _ ) -> (
+        match Lam_stats.elements_of_element meta element with
+        | Some elements when List.length components = Array.length elements ->
+            Block
+              (Array.map2 (Array.of_list components) elements
+                 ~f:(fun (component : Lam.Constant.t) element ->
+                   match component with
+                   | Const_block (_, Blk_tuple, [ shape; Const_string _ ]) ->
+                       field_of_shape meta shape element
+                   | _ -> NA))
+        | Some _ | None -> NA)
+    | _ -> NA
+  in
+  let rec collect_bind (meta : Lam_stats.t) rec_flag
+      (mutability : Asttypes.mutable_flag) (ident : Ident.t) (lam : Lam.t) =
     match lam with
     | Lconst v ->
         Ident.Hashtbl.replace meta.ident_tbl ~key:ident ~data:(Constant v)
@@ -107,80 +129,63 @@ let collect_info =
             -- since collect meta would iter everywhere,
             so -- it would still iterate internally
         *)
-        List.iter
-          ~f:(fun p -> Ident.Hashtbl.add meta.ident_tbl ~key:p ~data:Parameter)
-          params;
+        add_parameters meta params;
         let arity = Lam_arity_analysis.get_arity meta lam in
-        annotate meta rec_flag ident arity lam;
+        annotate meta ident arity (Some (lam, rec_flag));
         collect meta body
-    | x ->
+    | x -> (
         collect meta x;
-        if Ident.Set.mem ident meta.export_idents then
-          annotate meta rec_flag ident (Lam_arity_analysis.get_arity meta x) lam
+        let is_export_id = Ident.Set.mem ident meta.export_idents in
+        match mutability with
+        | Mutable ->
+            (* a later [Lassign] may change the arity *)
+            if is_export_id then
+              annotate meta ident (Lam_arity_analysis.get_arity meta x) None
+        | Immutable -> (
+            match functor_result x with
+            | Some fields ->
+                Ident.Hashtbl.replace meta.ident_tbl ~key:ident
+                  ~data:(ImmutableBlock fields)
+            | None ->
+                let arity = Lam_arity_analysis.get_arity meta x in
+                if is_export_id || not (Lam_arity.first_arity_na arity) then
+                  annotate meta ident arity None))
   and collect meta (lam : Lam.t) =
     match lam with
-    | Lconst _ -> ()
-    | Lvar _ | Lmutvar _ -> ()
-    | Lapply { ap_func = l1; ap_args = ll; _ } ->
-        collect meta l1;
-        List.iter ~f:(collect meta) ll
     | Lfunction { params; body = l; _ } ->
         (* functor ? *)
-        List.iter
-          ~f:(fun p -> Ident.Hashtbl.add meta.ident_tbl ~key:p ~data:Parameter)
-          params;
+        add_parameters meta params;
         collect meta l
-    | Llet (_, ident, arg, body) | Lmutlet (ident, arg, body) ->
-        collect_bind meta Lam_non_rec ident arg;
+    | Llet (_, ident, arg, body) ->
+        collect_bind meta Lam_non_rec Immutable ident arg;
+        collect meta body
+    | Lmutlet (ident, arg, body) ->
+        collect_bind meta Lam_non_rec Mutable ident arg;
         collect meta body
     | Lletrec (bindings, body) ->
         (match bindings with
-        | [ (ident, arg) ] -> collect_bind meta Lam_self_rec ident arg
+        | [ (ident, arg) ] -> collect_bind meta Lam_self_rec Immutable ident arg
         | _ ->
             List.iter
-              ~f:(fun (ident, arg) -> collect_bind meta Lam_rec ident arg)
+              ~f:(fun (ident, arg) ->
+                collect_bind meta Lam_rec Immutable ident arg)
               bindings);
         collect meta body
-    | Lglobal_module _ -> ()
-    | Lprim { args; _ } -> List.iter ~f:(collect meta) args
-    | Lswitch (l, { sw_failaction; sw_consts; sw_blocks; _ }) ->
-        collect meta l;
-        List.iter ~f:(fun (_, x) -> collect meta x) sw_consts;
-        List.iter ~f:(fun (_, x) -> collect meta x) sw_blocks;
-        Option.iter ~f:(collect meta) sw_failaction
-    | Lstringswitch (l, sw, d) ->
-        collect meta l;
-        List.iter ~f:(fun (_, x) -> collect meta x) sw;
-        Option.iter ~f:(collect meta) d
-    | Lstaticraise (_code, ls) -> List.iter ~f:(collect meta) ls
-    | Lstaticcatch (l1, (_, _), l2) ->
-        collect meta l1;
-        collect meta l2
-    | Ltrywith (l1, _, l2) ->
-        collect meta l1;
-        collect meta l2
-    | Lifthenelse (l1, l2, l3) ->
-        collect meta l1;
-        collect meta l2;
-        collect meta l3
-    | Lsequence (l1, l2) ->
-        collect meta l1;
-        collect meta l2
-    | Lwhile (l1, l2) ->
-        collect meta l1;
-        collect meta l2
-    | Lfor (_, l1, l2, _dir, l3) ->
-        collect meta l1;
-        collect meta l2;
-        collect meta l3
-    | Lassign (_v, l) ->
-        (* Lalias-bound variables are never assigned, so don't increase
-           v's refcollect meta *)
-        collect meta l
-    | Lsend (_, m, o, ll, _) ->
-        collect meta m;
-        collect meta o;
-        List.iter ~f:(collect meta) ll
-    | Lifused (_v, e) -> collect meta e
+    | Lprim
+        { primitive = Pupdate_mod; args = [ Lconst shape; Lvar m; value ]; _ }
+      -> (
+        collect meta value;
+        let result = Lam.result_expression value in
+        let element =
+          match functor_result result with
+          | Some fields -> Lam_id_kind.Element.Block fields
+          | None -> Lam_id_kind.Element.of_lambda result
+        in
+        match field_of_shape meta shape element with
+        | Block fields ->
+            Ident.Hashtbl.replace meta.ident_tbl ~key:m
+              ~data:(ImmutableBlock fields)
+        | NA | SimpleForm _ | Arity _ -> ())
+    | lam -> Lam_iter.inner_iter lam ~f:(collect meta)
   in
   fun (meta : Lam_stats.t) (lam : Lam.t) -> collect meta lam

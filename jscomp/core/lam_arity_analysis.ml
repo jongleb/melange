@@ -29,7 +29,7 @@ let arity_of_var (meta : Lam_stats.t) (v : Ident.t) =
       if it's not from function parameter, we should warn
   *)
   match Ident.Hashtbl.find meta.ident_tbl v with
-  | FunctionId { arity; _ } -> arity
+  | FunctionId { arity; _ } | Parameter arity -> arity
   | _ | (exception Not_found) -> Lam_arity.na
 
 (* we need record all aliases -- since not all aliases are eliminated,
@@ -49,8 +49,8 @@ let rec get_arity (meta : Lam_stats.t) (lam : Lam.t) : Lam_arity.t =
         _;
       } -> (
       match Lam_compile_env.query_external_id_info ~dynamic_import id name with
-      | Some { arity = Single x; _ } -> x
-      | Some { arity = Submodule _; _ } | None -> Lam_arity.na)
+      | Some { arity; _ } -> Js_cmj_format.call_arity arity
+      | None -> Lam_arity.na)
   | Lprim
       {
         primitive = Pfield (m, _);
@@ -68,7 +68,7 @@ let rec get_arity (meta : Lam_stats.t) (lam : Lam.t) : Lam_arity.t =
       match Lam_compile_env.query_external_id_info ~dynamic_import id name with
       | Some { arity = Submodule subs; _ } ->
           subs.(m) (* TODO: shall we store it as array?*)
-      | Some { arity = Single _; _ } | None -> Lam_arity.na)
+      | Some { arity = Single _ | Functor _; _ } | None -> Lam_arity.na)
   (* TODO: all information except Pccall is complete, we could
      get more arity information
   *)
@@ -80,6 +80,10 @@ let rec get_arity (meta : Lam_stats.t) (lam : Lam.t) : Lam_arity.t =
       } ->
       Lam_arity.info [ arity ] false
   | Lprim { primitive = Praise; _ } -> Lam_arity.raise_arity_info
+  | Lprim { primitive = Pfield (i, _); args = [ parent ]; _ } -> (
+      match Lam_stats.block_element meta parent i with
+      | Some (Arity arity) -> arity
+      | Some (NA | SimpleForm _ | Block _) | None -> Lam_arity.na)
   | Lglobal_module _ (* TODO: fix me never going to happen *) | Lprim _ ->
       Lam_arity.na (* CHECK*)
   (* shall we handle primitive in a direct way,
@@ -142,17 +146,16 @@ let rec get_arity (meta : Lam_stats.t) (lam : Lam.t) : Lam_arity.t =
 
 and all_lambdas meta (xs : Lam.t list) =
   match xs with
-  | y :: ys ->
-      let arity = get_arity meta y in
-      let rec aux (acc : Lam_arity.t) xs =
-        match (acc, xs) with
-        | Arity_na, _ -> acc
-        | _, [] -> acc
-        | Arity_info (xxxs, tail), y :: ys -> (
-            match get_arity meta y with
-            | Arity_na -> Lam_arity.na
-            | Arity_info (yyys, tail2) ->
-                aux (Lam_arity.merge_arities xxxs yyys tail tail2) ys)
-      in
-      aux arity ys
   | [] -> Lam_arity.na
+  | y :: ys ->
+      List.fold_left ys ~init:(get_arity meta y)
+        ~f:(fun (acc : Lam_arity.t) lam ->
+          match acc with
+          | Arity_na -> acc
+          | Arity_info _ -> Lam_arity.merge_arities acc (get_arity meta lam))
+
+let arity_of_element meta (element : Lam_id_kind.Element.t) =
+  match element with
+  | Arity arity -> arity
+  | SimpleForm lam -> get_arity meta lam
+  | NA | Block _ -> Lam_arity.na

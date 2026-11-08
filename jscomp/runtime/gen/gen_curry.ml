@@ -75,6 +75,7 @@ let generate_case ?arity ~args_number args_array args =
                 (Array.to_list
                    (Array.sub args_array ~pos:arity ~len:(args_number - arity)))))
 
+(* keep in sync with [Js_runtime_modules.curry_max_arity] *)
 let number = 8
 
 let generate_apply arity =
@@ -128,7 +129,7 @@ let () =
        (String.concat ~sep:"\n"
           (List.init ~len:number ~f:(fun i -> generate_apply (i + 1))))
        (String.concat ~sep:"\n"
-          (List.init ~len:8 ~f:(fun i -> generate_fun (i + 1))))
+          (List.init ~len:number ~f:(fun i -> generate_fun (i + 1))))
 
 (* local variables: *)
 (* compile-command: "ocaml curry_gen.ml > ../jscomp/runtime/curry.ml" *)

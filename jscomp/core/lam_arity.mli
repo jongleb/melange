@@ -43,4 +43,4 @@ val get_first_arity : t -> int option
 val extract_arity : t -> int list
 (** when [NA] return  empty list*)
 
-val merge_arities : int list -> int list -> bool -> bool -> t
+val merge_arities : t -> t -> t

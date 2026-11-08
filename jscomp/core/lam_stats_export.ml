@@ -42,23 +42,33 @@ let values_of_export =
     :
     Js_cmj_format.cmj_value String.Map.t
   ->
+    let block_arities (lam : Lam.t) =
+      match lam with
+      | Lprim { primitive = Pmakeblock (_, _, Immutable); args; _ } ->
+          Some (Array.of_list_map args ~f:(Lam_arity_analysis.get_arity meta))
+      | _ -> None
+    in
     List.fold_left meta.exports ~init:String.Map.empty ~f:(fun acc x ->
         let arity =
           match Ident.Hashtbl.find meta.ident_tbl x with
-          | FunctionId { arity; _ } -> Js_cmj_format.Single arity
+          | FunctionId { arity; _ } -> (
+              match Ident.Map.find_opt x export_map with
+              | Some (Lfunction { body; attr = { is_a_functor = true; _ }; _ })
+                -> (
+                  match block_arities (Lam.result_expression body) with
+                  | Some result -> Js_cmj_format.Functor { arity; result }
+                  | None -> Single arity)
+              | Some _ | None -> Single arity)
           | ImmutableBlock elems ->
               (* FIXME: field name for dumping *)
               Submodule
-                (Array.map elems ~f:(function
-                  | Lam_id_kind.Element.NA -> Lam_arity.na
-                  | SimpleForm lam -> Lam_arity_analysis.get_arity meta lam))
+                (Array.map elems ~f:(Lam_arity_analysis.arity_of_element meta))
           | _ | (exception Not_found) -> (
-              match Ident.Map.find x export_map with
-              | Lprim { primitive = Pmakeblock (_, _, Immutable); args; _ } ->
-                  Submodule
-                    (Array.of_list_map args ~f:(fun lam ->
-                         Lam_arity_analysis.get_arity meta lam))
-              | _ | (exception Not_found) -> Js_cmj_format.single_na)
+              match
+                Option.bind (Ident.Map.find_opt x export_map) ~f:block_arities
+              with
+              | Some arities -> Submodule arities
+              | None -> Js_cmj_format.single_na)
         in
         let persistent_closed_lambda =
           match Ident.Map.find x export_map with

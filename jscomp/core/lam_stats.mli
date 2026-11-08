@@ -39,3 +39,7 @@ type t = {
 
 val print : t -> _ Pp.t
 val make : export_idents:Ident.t list -> export_ident_sets:Ident.Set.t -> t
+val block_element : t -> Lam.t -> int -> Lam_id_kind.Element.t option
+
+val elements_of_element :
+  t -> Lam_id_kind.Element.t -> Lam_id_kind.Element.t array option

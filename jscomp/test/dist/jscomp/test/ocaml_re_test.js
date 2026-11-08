@@ -294,10 +294,6 @@ function compare(param, param$1) {
   }
 }
 
-const funarg = {
-  compare: compare
-};
-
 function height(param) {
   if (/* tag */ typeof param === "number" || typeof param === "string") {
     return 0;
@@ -393,7 +389,7 @@ function add(x, data, m) {
   const d = m.d;
   const v = m.v;
   const l = m.l;
-  const c = Curry._2(funarg.compare, x, v);
+  const c = compare(x, v);
   if (c === 0) {
     if (d === data) {
       return m;
@@ -424,23 +420,6 @@ function add(x, data, m) {
   }
 }
 
-function find(x, _param) {
-  while (true) {
-    const param = _param;
-    if (/* tag */ typeof param === "number" || typeof param === "string") {
-      throw new Caml_js_exceptions.MelangeError(Stdlib.Not_found, {
-          MEL_EXN_ID: Stdlib.Not_found
-        });
-    }
-    const c = Curry._2(funarg.compare, x, param.v);
-    if (c === 0) {
-      return param.d;
-    }
-    _param = c < 0 ? param.l : param.r;
-    continue;
-  };
-}
-
 const cany = {
   hd: [
     0,
@@ -452,60 +431,6 @@ const cany = {
 function intersect(x, y) {
   return (x & y) !== 0;
 }
-
-function $plus$plus(x, y) {
-  return x | y;
-}
-
-function from_char(param) {
-  if (param >= 170) {
-    if (param >= 187) {
-      if (param > 246 || param < 192) {
-        if (param >= 248) {
-          return 2;
-        } else {
-          return 4;
-        }
-      } else if (param !== 215) {
-        return 2;
-      } else {
-        return 4;
-      }
-    } else if (!(param > 185 || param < 171) && param !== 181) {
-      return 4;
-    } else {
-      return 2;
-    }
-  } else if (param >= 65) {
-    if (param > 96 || param < 91) {
-      if (param >= 123) {
-        return 4;
-      } else {
-        return 2;
-      }
-    } else if (param !== 95) {
-      return 4;
-    } else {
-      return 2;
-    }
-  } else if (param >= 48) {
-    if (param >= 58) {
-      return 4;
-    } else {
-      return 2;
-    }
-  } else if (param !== 10) {
-    return 4;
-  } else {
-    return 12;
-  }
-}
-
-const compare$1 = Caml.caml_int_compare;
-
-const funarg$1 = {
-  compare: compare$1
-};
 
 function height$1(param) {
   if (/* tag */ typeof param === "number" || typeof param === "string") {
@@ -598,7 +523,7 @@ function add$1(x, t) {
   const r = t.r;
   const v = t.v;
   const l = t.l;
-  const c = Curry._2(funarg$1.compare, x, v);
+  const c = Caml.caml_int_compare(x, v);
   if (c === 0) {
     return t;
   }
@@ -622,11 +547,9 @@ function hash_combine(h, accu) {
   return Math.imul(accu, 65599) + h | 0;
 }
 
-const empty_pmarks = /* Empty */ 0;
-
 const empty = {
   marks: /* [] */ 0,
-  pmarks: empty_pmarks
+  pmarks: /* Empty */ 0
 };
 
 function hash(m, accu) {
@@ -676,7 +599,7 @@ function first(f, _param) {
     if (!param) {
       return;
     }
-    const res = Curry._1(f, param.hd);
+    const res = f(param.hd);
     if (res !== undefined) {
       return res;
     }
@@ -1339,7 +1262,7 @@ function delta_1(marks, c, next_cat, prev_cat, x, rem) {
       }
     case /* Pmark */ 8 :
       const marks_marks$1 = marks.marks;
-      const marks_pmarks$1 = Curry._2(add$1, s._0, marks.pmarks);
+      const marks_pmarks$1 = add$1(s._0, marks.pmarks);
       const marks$2 = {
         marks: marks_marks$1,
         pmarks: marks_pmarks$1
@@ -1456,23 +1379,6 @@ function status(s) {
   return st$1;
 }
 
-const Re_automata_Category = {
-  $plus$plus: $plus$plus,
-  from_char: from_char,
-  inexistant: 1,
-  letter: 2,
-  not_letter: 4,
-  newline: 8,
-  lastnewline: 16,
-  search_boundary: 32
-};
-
-const Re_automata_State = {
-  dummy: dummy,
-  create: create$2,
-  Table: Table
-};
-
 function iter(_n, f, _v) {
   while (true) {
     const v = _v;
@@ -1480,7 +1386,7 @@ function iter(_n, f, _v) {
     if (n === 0) {
       return v;
     }
-    _v = Curry._1(f, v);
+    _v = f(v);
     _n = n - 1 | 0;
     continue;
   };
@@ -1488,11 +1394,52 @@ function iter(_n, f, _v) {
 
 function category(re, c) {
   if (c === -1) {
-    return Re_automata_Category.inexistant;
+    return 1;
   } else if (c === re.lnl) {
-    return Curry._2(Re_automata_Category.$plus$plus, Curry._2(Re_automata_Category.$plus$plus, Re_automata_Category.lastnewline, Re_automata_Category.newline), Re_automata_Category.not_letter);
+    return 28;
   } else {
-    return Curry._1(Re_automata_Category.from_char, Caml_bytes.get(re.col_repr, c));
+    let param = Caml_bytes.get(re.col_repr, c);
+    if (param >= 170) {
+      if (param >= 187) {
+        if (param > 246 || param < 192) {
+          if (param >= 248) {
+            return 2;
+          } else {
+            return 4;
+          }
+        } else if (param !== 215) {
+          return 2;
+        } else {
+          return 4;
+        }
+      } else if (!(param > 185 || param < 171) && param !== 181) {
+        return 4;
+      } else {
+        return 2;
+      }
+    } else if (param >= 65) {
+      if (param > 96 || param < 91) {
+        if (param >= 123) {
+          return 4;
+        } else {
+          return 2;
+        }
+      } else if (param !== 95) {
+        return 4;
+      } else {
+        return 2;
+      }
+    } else if (param >= 48) {
+      if (param >= 58) {
+        return 4;
+      } else {
+        return 2;
+      }
+    } else if (param !== 10) {
+      return 4;
+    } else {
+      return 12;
+    }
   }
 }
 
@@ -1503,7 +1450,7 @@ const unknown_state = {
   real_idx: 0,
   next: dummy_next,
   final: /* [] */ 0,
-  desc: Re_automata_State.dummy
+  desc: dummy
 };
 
 function mk_state(ncol, desc) {
@@ -1521,13 +1468,13 @@ function mk_state(ncol, desc) {
 
 function find_state(re, desc) {
   try {
-    return Curry._2(Re_automata_State.Table.find, re.states, desc);
+    return Table.find(re.states, desc);
   }
   catch (raw_exn){
     const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
     if (exn.MEL_EXN_ID === Stdlib.Not_found) {
       const st = mk_state(re.ncol, desc);
-      Curry._3(Re_automata_State.Table.add, re.states, desc, st);
+      Table.add(re.states, desc, st);
       return st;
     }
     throw exn;
@@ -1622,7 +1569,7 @@ function find_initial_state(re, cat) {
   catch (raw_exn){
     const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
     if (exn.MEL_EXN_ID === Stdlib.Not_found) {
-      const st = find_state(re, Curry._2(Re_automata_State.create, cat, re.initial));
+      const st = find_state(re, create$2(cat, re.initial));
       re.initial_states = {
         hd: [
           cat,
@@ -1731,7 +1678,21 @@ function trans_set(cache, cm, s) {
     s
   ];
   try {
-    return Curry._2(find, v, cache.contents);
+    let _param = cache.contents;
+    while (true) {
+      const param = _param;
+      if (/* tag */ typeof param === "number" || typeof param === "string") {
+        throw new Caml_js_exceptions.MelangeError(Stdlib.Not_found, {
+            MEL_EXN_ID: Stdlib.Not_found
+          });
+      }
+      const c = compare(v, param.v);
+      if (c === 0) {
+        return param.d;
+      }
+      _param = c < 0 ? param.l : param.r;
+      continue;
+    };
   }
   catch (raw_exn){
     const exn = Caml_js_exceptions.internalToOCamlException(raw_exn);
@@ -1739,7 +1700,7 @@ function trans_set(cache, cm, s) {
       const l = Stdlib__List.fold_right((function (param, l) {
         return union(seq(Caml_bytes.get(cm, param[0]), Caml_bytes.get(cm, param[1])), l);
       }), s, /* [] */ 0);
-      cache.contents = Curry._3(add, v, l, cache.contents);
+      cache.contents = add(v, l, cache.contents);
       return l;
     }
     throw exn;
@@ -1781,18 +1742,19 @@ function is_charset(_param) {
 }
 
 function split(s, cm) {
-  let _t = s;
   let f = function (i, j) {
     Caml_bytes.set(cm, i, /* '\001' */1);
     Caml_bytes.set(cm, j + 1 | 0, /* '\001' */1);
   };
+  const f$1 = Curry.__2(f);
+  let _t = s;
   while (true) {
     const t = _t;
     if (!t) {
       return;
     }
     const match = t.hd;
-    Curry._2(f, match[0], match[1]);
+    f$1(match[0], match[1]);
     _t = t.tl;
     continue;
   };
@@ -2263,46 +2225,40 @@ function translate(ids, kind, _ign_group, ign_case, _greedy, pos, cache, c, _s) 
     if (/* tag */ typeof s === "number" || typeof s === "string") {
       switch (s) {
         case /* Beg_of_line */ 0 :
-          const c$1 = Curry._2(Re_automata_Category.$plus$plus, Re_automata_Category.inexistant, Re_automata_Category.newline);
           return [
             mk_expr(ids, {
               TAG: /* After */ 7,
-              _0: c$1
+              _0: 9
             }),
             kind
           ];
         case /* End_of_line */ 1 :
-          const c$2 = Curry._2(Re_automata_Category.$plus$plus, Re_automata_Category.inexistant, Re_automata_Category.newline);
           return [
             mk_expr(ids, {
               TAG: /* Before */ 6,
-              _0: c$2
+              _0: 9
             }),
             kind
           ];
         case /* Beg_of_word */ 2 :
-          const c$3 = Curry._2(Re_automata_Category.$plus$plus, Re_automata_Category.inexistant, Re_automata_Category.not_letter);
-          const c$4 = Curry._2(Re_automata_Category.$plus$plus, Re_automata_Category.inexistant, Re_automata_Category.letter);
           return [
             seq$1(ids, "First", mk_expr(ids, {
               TAG: /* After */ 7,
-              _0: c$3
+              _0: 5
             }), mk_expr(ids, {
               TAG: /* Before */ 6,
-              _0: c$4
+              _0: 3
             })),
             kind
           ];
         case /* End_of_word */ 3 :
-          const c$5 = Curry._2(Re_automata_Category.$plus$plus, Re_automata_Category.inexistant, Re_automata_Category.letter);
-          const c$6 = Curry._2(Re_automata_Category.$plus$plus, Re_automata_Category.inexistant, Re_automata_Category.not_letter);
           return [
             seq$1(ids, "First", mk_expr(ids, {
               TAG: /* After */ 7,
-              _0: c$5
+              _0: 3
             }), mk_expr(ids, {
               TAG: /* Before */ 6,
-              _0: c$6
+              _0: 5
             })),
             kind
           ];
@@ -2311,18 +2267,18 @@ function translate(ids, kind, _ign_group, ign_case, _greedy, pos, cache, c, _s) 
             alt(ids, {
               hd: seq$1(ids, "First", mk_expr(ids, {
                 TAG: /* After */ 7,
-                _0: Re_automata_Category.letter
+                _0: 2
               }), mk_expr(ids, {
                 TAG: /* Before */ 6,
-                _0: Re_automata_Category.letter
+                _0: 2
               })),
               tl: {
                 hd: seq$1(ids, "First", mk_expr(ids, {
                   TAG: /* After */ 7,
-                  _0: Re_automata_Category.letter
+                  _0: 2
                 }), mk_expr(ids, {
                   TAG: /* Before */ 6,
-                  _0: Re_automata_Category.letter
+                  _0: 2
                 })),
                 tl: /* [] */ 0
               }
@@ -2333,7 +2289,7 @@ function translate(ids, kind, _ign_group, ign_case, _greedy, pos, cache, c, _s) 
           return [
             mk_expr(ids, {
               TAG: /* After */ 7,
-              _0: Re_automata_Category.inexistant
+              _0: 1
             }),
             kind
           ];
@@ -2341,16 +2297,15 @@ function translate(ids, kind, _ign_group, ign_case, _greedy, pos, cache, c, _s) 
           return [
             mk_expr(ids, {
               TAG: /* Before */ 6,
-              _0: Re_automata_Category.inexistant
+              _0: 1
             }),
             kind
           ];
         case /* Last_end_of_line */ 7 :
-          const c$7 = Curry._2(Re_automata_Category.$plus$plus, Re_automata_Category.inexistant, Re_automata_Category.lastnewline);
           return [
             mk_expr(ids, {
               TAG: /* Before */ 6,
-              _0: c$7
+              _0: 17
             }),
             kind
           ];
@@ -2358,7 +2313,7 @@ function translate(ids, kind, _ign_group, ign_case, _greedy, pos, cache, c, _s) 
           return [
             mk_expr(ids, {
               TAG: /* After */ 7,
-              _0: Re_automata_Category.search_boundary
+              _0: 32
             }),
             kind
           ];
@@ -2366,7 +2321,7 @@ function translate(ids, kind, _ign_group, ign_case, _greedy, pos, cache, c, _s) 
           return [
             mk_expr(ids, {
               TAG: /* Before */ 6,
-              _0: Re_automata_Category.search_boundary
+              _0: 32
             }),
             kind
           ];
@@ -3148,7 +3103,7 @@ function compile(r) {
     tbl: {
       contents: [false]
     },
-    states: Curry._1(Re_automata_State.Table.create, 97),
+    states: Table.create(97),
     group_count: group_count
   };
 }
@@ -3190,14 +3145,14 @@ function exec_internal(name, posOpt, lenOpt, groups, re, s) {
     pos: pos,
     last: last
   };
-  const initial_cat = pos === 0 ? Curry._2(Re_automata_Category.$plus$plus, Re_automata_Category.search_boundary, Re_automata_Category.inexistant) : Curry._2(Re_automata_Category.$plus$plus, Re_automata_Category.search_boundary, category(re, get_color(re, s, pos - 1 | 0)));
+  const initial_cat = pos === 0 ? 33 : 32 | category(re, get_color(re, s, pos - 1 | 0));
   const initial_state = find_initial_state(re, initial_cat);
   const st = scan_str(info, s, initial_state, groups);
   let res;
   if (st.idx === -3 || partial) {
     res = status(st.desc);
   } else {
-    const final_cat = last === slen ? Curry._2(Re_automata_Category.$plus$plus, Re_automata_Category.search_boundary, Re_automata_Category.inexistant) : Curry._2(Re_automata_Category.$plus$plus, Re_automata_Category.search_boundary, category(re, get_color(re, s, last)));
+    const final_cat = last === slen ? 33 : 32 | category(re, get_color(re, s, last));
     const match = $$final(info, st, final_cat);
     if (groups) {
       Caml_array.set(info.positions, match[0], last + 1 | 0);
@@ -4129,4 +4084,4 @@ const s = Caml_bytes.bytes_to_string(Stdlib__Bytes.make(1048575, /* 'a' */97)) +
 eq("File \"xx.ml\", line 7, characters 3-10", get(exec(compile(re(undefined, "aa?b")), undefined, s), 0), "aab");
 
 Mt.from_pair_suites("Ocaml_re_test", suites.contents);
-/* CSetMap Not a pure module */
+/* Table Not a pure module */
